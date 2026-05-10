@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>כניסה — דשבורד השקעות</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+    .logo { font-size: 48px; margin-bottom: 12px; }
+    h1 { font-size: 20px; font-weight: 700; color: #f0f6fc; margin-bottom: 6px; }
+    .sub { font-size: 13px; color: #8b949e; margin-bottom: 28px; }
+    label { display: block; text-align: right; font-size: 12px; font-weight: 600; color: #8b949e; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+    input[type="password"] {
+      width: 100%;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #f0f6fc;
+      padding: 10px 13px;
+      border-radius: 6px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .2s;
+      font-family: inherit;
+      text-align: right;
+    }
+    input[type="password"]:focus { border-color: #4493f8; }
+    .btn {
+      margin-top: 18px;
+      width: 100%;
+      background: #4493f8;
+      color: #fff;
+      border: none;
+      padding: 11px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity .2s;
+    }
+    .btn:hover { opacity: .88; }
+    .error { margin-top: 14px; color: #f85149; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">📈</div>
+    <h1>דשבורד השקעות</h1>
+    <p class="sub">הכנס סיסמה כדי להמשיך</p>
+    <form method="post">
+      <label for="password">סיסמה</label>
+      <input type="password" id="password" name="password" autofocus placeholder="••••••••">
+      <button type="submit" class="btn">כניסה</button>
+    </form>
+    {% if error %}
+      <p class="error">{{ error }}</p>
+    {% endif %}
+  </div>
+</body>
+</html>
