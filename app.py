@@ -2,11 +2,41 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, session, redirect, url_for
 import requests
 import yfinance as yf
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
+
+DASHBOARD_PASSWORD = os.environ.get('DASHBOARD_PASSWORD', 'Ab170107')
+
+
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    if request.method == 'POST':
+        if request.form.get('password') == DASHBOARD_PASSWORD:
+            session['logged_in'] = True
+            return redirect(url_for('index'))
+        error = 'סיסמה שגויה'
+    return render_template('login.html', error=error)
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 BASE_DIR       = os.path.dirname(os.path.abspath(__file__))
 PORTFOLIO_FILE = os.path.join(BASE_DIR, 'portfolio.json')
 
@@ -108,16 +138,19 @@ def is_crypto(ticker):
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route('/')
+@login_required
 def index():
     return render_template('index.html')
 
 
 @app.route('/api/portfolio', methods=['GET'])
+@login_required
 def get_portfolio():
     return jsonify(load_portfolio())
 
 
 @app.route('/api/portfolio', methods=['POST'])
+@login_required
 def save_portfolio():
     data = request.get_json()
     save_portfolio_data(data)
