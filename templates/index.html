@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>דשבורד השקעות</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://s3.tradingview.com/tv.js"></script>
+</head>
+<body>
+
+  <!-- ═══ HEADER ═══════════════════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-brand">
+      <span class="logo">📈</span>
+      <div>
+        <div class="brand-title">דשבורד השקעות</div>
+        <div class="clock" id="clock"></div>
+      </div>
+    </div>
+
+    <div class="summary-strip">
+      <div class="stat-card">
+        <span class="stat-label">סה"כ הושקע</span>
+        <span class="stat-value" id="stat-invested">—</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-card">
+        <span class="stat-label">שווי נוכחי</span>
+        <span class="stat-value" id="stat-current">—</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-card">
+        <span class="stat-label">רווח / הפסד</span>
+        <span class="stat-value" id="stat-pnl">—</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-card">
+        <span class="stat-label">תשואה כוללת</span>
+        <span class="stat-value" id="stat-return">—</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-card narrow">
+        <span class="stat-label">$/₪</span>
+        <span class="stat-value" id="stat-rate">—</span>
+      </div>
+    </div>
+
+    <div class="header-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-text" id="status-text">מתחבר...</span>
+    </div>
+  </header>
+
+  <!-- ═══ ADD INVESTMENT FORM ═══════════════════════════════════════════════ -->
+  <div class="form-panel" id="form-panel">
+    <div class="form-panel-header" onclick="toggleForm()">
+      <span class="form-panel-title">＋ הוספת השקעה חדשה</span>
+      <span class="form-toggle-icon" id="form-icon">▼</span>
+    </div>
+    <div class="form-panel-body" id="form-body" style="display:none">
+      <div class="form-fields">
+
+        <div class="field">
+          <label>טיקר</label>
+          <div class="ac-wrap">
+            <input type="text" id="f-ticker" placeholder="AAPL, BTC-USD..." autocomplete="off" spellcheck="false">
+            <div class="ac-list" id="ac-list"></div>
+          </div>
+          <div class="field-hint" id="f-name-hint"></div>
+        </div>
+
+        <div class="field">
+          <label>תאריך קנייה</label>
+          <input type="date" id="f-date">
+        </div>
+
+        <div class="field narrow">
+          <label>סכום ($)</label>
+          <input type="number" id="f-usd" placeholder="0.00" step="0.01" min="0">
+        </div>
+
+        <div class="field narrow">
+          <label>סכום (₪)</label>
+          <input type="number" id="f-ils" placeholder="0.00" step="0.01" min="0">
+        </div>
+
+        <div class="field narrow">
+          <label>קטגוריה</label>
+          <select id="f-cat">
+            <option value="מניות">מניות</option>
+            <option value="VOO">VOO</option>
+            <option value="QQQ">QQQ</option>
+            <option value="BTC">BTC</option>
+            <option value="ETH">ETH</option>
+          </select>
+        </div>
+
+        <div class="field btn-field">
+          <label>&nbsp;</label>
+          <button class="btn-add" onclick="addInvestment()">הוסף</button>
+        </div>
+
+      </div>
+      <div class="form-preview" id="form-preview"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TABS ══════════════════════════════════════════════════════════════ -->
+  <div class="tabs-bar">
+    <button class="tab active" data-tab="מניות"  onclick="switchTab('מניות')">מניות</button>
+    <button class="tab"        data-tab="VOO"    onclick="switchTab('VOO')">VOO</button>
+    <button class="tab"        data-tab="QQQ"    onclick="switchTab('QQQ')">QQQ</button>
+    <button class="tab"        data-tab="BTC"    onclick="switchTab('BTC')">₿ BTC</button>
+    <button class="tab"        data-tab="ETH"    onclick="switchTab('ETH')">⟠ ETH</button>
+    <button class="tab"        data-tab="סיכום"  onclick="switchTab('סיכום')">📊 סיכום</button>
+  </div>
+
+  <!-- ═══ MAIN CONTENT ══════════════════════════════════════════════════════ -->
+  <main class="main-content" id="main-content">
+    <div class="spinner">⟳ טוען נתונים...</div>
+  </main>
+
+  <!-- ═══ CHART PANEL ═══════════════════════════════════════════════════════ -->
+  <div class="chart-panel" id="chart-panel" style="display:none">
+    <div class="chart-top">
+      <div class="chart-info">
+        <span class="chart-ticker-label" id="chart-ticker"></span>
+        <span class="chart-price-label" id="chart-price"></span>
+        <span class="chart-change-label" id="chart-change"></span>
+      </div>
+      <div class="chart-controls">
+        <div class="range-group">
+          <button class="range-btn" data-range="7d"  onclick="loadChart('7d')">שבוע</button>
+          <button class="range-btn active" data-range="1mo" onclick="loadChart('1mo')">חודש</button>
+          <button class="range-btn" data-range="3mo" onclick="loadChart('3mo')">3 חודשים</button>
+          <button class="range-btn" data-range="1y"  onclick="loadChart('1y')">שנה</button>
+        </div>
+        <button class="btn-close" onclick="closeChart()">✕</button>
+      </div>
+    </div>
+    <div class="chart-body">
+      <div id="tv-chart"></div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

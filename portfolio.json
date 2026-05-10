@@ -1,0 +1,35 @@
+{
+  "מניות": [
+    {"id": "s1", "ticker": "NFLX", "name": "Netflix, Inc.", "invested_usd": 50.0, "invested_ils": 145.0, "purchase_date": "2025-11-12", "purchase_price": 115.75},
+    {"id": "s2", "ticker": "ORCL", "name": "Oracle Corporation", "invested_usd": 53.0, "invested_ils": 154.0, "purchase_date": "2025-12-02", "purchase_price": 201.10},
+    {"id": "s3", "ticker": "NVDA", "name": "NVIDIA Corporation", "invested_usd": 50.0, "invested_ils": 145.0, "purchase_date": "2025-11-12", "purchase_price": 199.05},
+    {"id": "s4", "ticker": "GOOG", "name": "Alphabet Inc.", "invested_usd": 50.0, "invested_ils": 145.0, "purchase_date": "2025-11-12", "purchase_price": 287.43}
+  ],
+  "VOO": [
+    {"id": "v1", "ticker": "VOO", "name": "Vanguard S&P 500 ETF", "invested_usd": 150.0, "invested_ils": 435.0, "purchase_date": "2025-11-10", "purchase_price": 626.47},
+    {"id": "v2", "ticker": "VOO", "name": "Vanguard S&P 500 ETF", "invested_usd": 300.0, "invested_ils": 870.0, "purchase_date": "2025-12-03", "purchase_price": 628.77},
+    {"id": "v3", "ticker": "VOO", "name": "Vanguard S&P 500 ETF", "invested_usd": 160.0, "invested_ils": 464.0, "purchase_date": "2026-02-02", "purchase_price": 636.72},
+    {"id": "v4", "ticker": "VOO", "name": "Vanguard S&P 500 ETF", "invested_usd": 160.0, "invested_ils": 464.0, "purchase_date": "2026-03-01", "purchase_price": 631.04},
+    {"id": "v5", "ticker": "VOO", "name": "Vanguard S&P 500 ETF", "invested_usd": 160.0, "invested_ils": 464.0, "purchase_date": "2026-04-01", "purchase_price": 612.50},
+    {"id": "v6", "ticker": "VOO", "name": "Vanguard S&P 500 ETF", "invested_usd": 160.0, "invested_ils": 464.0, "purchase_date": "2026-05-01", "purchase_price": 660.13}
+  ],
+  "QQQ": [
+    {"id": "q1", "ticker": "QQQ", "name": "Invesco QQQ Trust", "invested_usd": 255.0, "invested_ils": 740.0, "purchase_date": "2026-03-02", "purchase_price": 608.09},
+    {"id": "q2", "ticker": "QQQ", "name": "Invesco QQQ Trust", "invested_usd": 100.0, "invested_ils": 290.0, "purchase_date": "2026-04-01", "purchase_price": 584.31},
+    {"id": "q3", "ticker": "QQQ", "name": "Invesco QQQ Trust", "invested_usd": 100.0, "invested_ils": 290.0, "purchase_date": "2026-05-01", "purchase_price": 673.08}
+  ],
+  "BTC": [
+    {"id": "c1", "ticker": "BTC-USD", "name": "Bitcoin USD", "invested_usd": 45.0, "invested_ils": 131.0, "purchase_date": "2026-01-04", "purchase_price": 91501.0},
+    {"id": "c2", "ticker": "BTC-USD", "name": "Bitcoin USD", "invested_usd": 48.38, "invested_ils": 140.0, "purchase_date": "2026-02-02", "purchase_price": 77400.0},
+    {"id": "c3", "ticker": "BTC-USD", "name": "Bitcoin USD", "invested_usd": 47.84, "invested_ils": 150.0, "purchase_date": "2026-03-01", "purchase_price": 65798.0},
+    {"id": "c4", "ticker": "BTC-USD", "name": "Bitcoin USD", "invested_usd": 47.92, "invested_ils": 150.0, "purchase_date": "2026-04-05", "purchase_price": 66787.88},
+    {"id": "c5", "ticker": "BTC-USD", "name": "Bitcoin USD", "invested_usd": 50.95, "invested_ils": 150.0, "purchase_date": "2026-05-04", "purchase_price": 79943.20}
+  ],
+  "ETH": [
+    {"id": "c6", "ticker": "ETH-USD", "name": "Ethereum USD", "invested_usd": 18.0, "invested_ils": 52.0, "purchase_date": "2026-01-04", "purchase_price": 3143.20},
+    {"id": "c7", "ticker": "ETH-USD", "name": "Ethereum USD", "invested_usd": 19.35, "invested_ils": 56.0, "purchase_date": "2026-02-02", "purchase_price": 2296.0},
+    {"id": "c8", "ticker": "ETH-USD", "name": "Ethereum USD", "invested_usd": 19.13, "invested_ils": 56.0, "purchase_date": "2026-03-01", "purchase_price": 1939.0},
+    {"id": "c9", "ticker": "ETH-USD", "name": "Ethereum USD", "invested_usd": 19.17, "invested_ils": 60.0, "purchase_date": "2026-04-05", "purchase_price": 2036.70},
+    {"id": "c10", "ticker": "ETH-USD", "name": "Ethereum USD", "invested_usd": 20.38, "invested_ils": 60.0, "purchase_date": "2026-05-04", "purchase_price": 2357.50}
+  ]
+}
