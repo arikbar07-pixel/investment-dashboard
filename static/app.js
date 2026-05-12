@@ -502,7 +502,7 @@ function loadChart(range) {
 
       // Custom tooltip div
       var tooltip = document.createElement('div');
-      tooltip.style.cssText = 'position:absolute;display:none;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 12px;font-size:12px;color:#f0f6fc;pointer-events:none;z-index:999;line-height:1.6;';
+      tooltip.style.cssText = 'position:absolute;display:none;background:#21262d;border:1px solid #30363d;border-radius:5px;padding:5px 8px;font-size:11px;color:#f0f6fc;pointer-events:none;z-index:999;line-height:1.5;';
       container.style.position = 'relative';
       container.appendChild(tooltip);
 
@@ -530,10 +530,15 @@ function loadChart(range) {
           var chgStr = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
           var chgColor = chg >= 0 ? '#3fb950' : '#f85149';
           tooltip.innerHTML =
-            '$' + fmtPrice(d.close) + ' &nbsp;<span style="color:' + chgColor + ';font-weight:700">' + chgStr + '</span>';
+            '<span style="color:#8b949e">' + (typeof d.time === 'string' ? d.time : new Date(d.time * 1000).toLocaleDateString()) + '</span><br>' +
+            'פתיחה: $' + fmtPrice(d.open) + '<br>' +
+            'גבוה: $' + fmtPrice(d.high) + '<br>' +
+            'נמוך: $' + fmtPrice(d.low) + '<br>' +
+            'סגירה: $' + fmtPrice(d.close) + '<br>' +
+            '<span style="color:' + chgColor + ';font-weight:700">שינוי: ' + chgStr + '</span>';
           tooltip.style.display = 'block';
           var x = param.point ? param.point.x : 0;
-          var left = x < container.clientWidth / 2 ? (x + 12) : (x - 120);
+          var left = x < container.clientWidth / 2 ? (x + 12) : (x - 145);
           tooltip.style.left = left + 'px';
           tooltip.style.top  = '10px';
         });
