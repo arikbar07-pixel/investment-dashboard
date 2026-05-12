@@ -91,13 +91,7 @@
 
         <div class="field narrow">
           <label>קטגוריה</label>
-          <select id="f-cat">
-            <option value="מניות">מניות</option>
-            <option value="VOO">VOO</option>
-            <option value="QQQ">QQQ</option>
-            <option value="BTC">BTC</option>
-            <option value="ETH">ETH</option>
-          </select>
+          <select id="f-cat"></select>
         </div>
 
         <div class="field btn-field">
@@ -111,14 +105,7 @@
   </div>
 
   <!-- ═══ TABS ══════════════════════════════════════════════════════════════ -->
-  <div class="tabs-bar">
-    <button class="tab active" data-tab="מניות"  onclick="switchTab('מניות')">מניות</button>
-    <button class="tab"        data-tab="VOO"    onclick="switchTab('VOO')">VOO</button>
-    <button class="tab"        data-tab="QQQ"    onclick="switchTab('QQQ')">QQQ</button>
-    <button class="tab"        data-tab="BTC"    onclick="switchTab('BTC')">₿ BTC</button>
-    <button class="tab"        data-tab="ETH"    onclick="switchTab('ETH')">⟠ ETH</button>
-    <button class="tab"        data-tab="סיכום"  onclick="switchTab('סיכום')">📊 סיכום</button>
-  </div>
+  <div class="tabs-bar" id="tabs-bar"></div>
 
   <!-- ═══ MAIN CONTENT ══════════════════════════════════════════════════════ -->
   <main class="main-content" id="main-content">

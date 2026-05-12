@@ -269,6 +269,9 @@ input[type="date"] { direction: ltr; text-align: right; color-scheme: dark; }
 }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab .tab-del { opacity: 0; transition: opacity .15s; font-size: 10px; margin-right: 4px; }
+.tab:hover .tab-del { opacity: .6; }
+.tab:hover .tab-del:hover { opacity: 1; color: var(--red); }
 
 /* ── Main Content ──────────────────────────────────────────────────────── */
 .main-content { padding: 20px 24px; }

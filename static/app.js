@@ -63,7 +63,8 @@ async function init() {
     S.portfolio = results[0];
     S.usdIls = results[1].rate || 3.65;
     await refreshPrices();
-    switchTab(TAB_STOCKS, false);
+    renderTabs();
+    switchTab(TAB_STOCKS);
     setStatus('live');
   } catch(e) {
     setStatus('error');
@@ -168,12 +169,64 @@ function renderSummaryCards() {
 
 // --- Tabs ---
 
-function switchTab(tab, scroll) {
-  if (scroll === undefined) scroll = true;
-  S.activeTab = tab;
-  document.querySelectorAll('.tab').forEach(function(btn) {
-    btn.classList.toggle('active', btn.dataset.tab === tab);
+var TAB_ICONS = { 'BTC': '₿ ', 'ETH': '⟠ ', 'סיכום': '📊 ' };
+
+function renderTabs() {
+  var bar = document.getElementById('tabs-bar');
+  if (!bar) return;
+  var cats = Object.keys(S.portfolio);
+  var html = '';
+
+  cats.forEach(function(cat) {
+    var icon    = TAB_ICONS[cat] || '';
+    var active  = S.activeTab === cat ? ' active' : '';
+    var delBtn  = '<span onclick="event.stopPropagation();deleteCategory(\'' + cat + '\')" ' +
+      'style="margin-right:4px;opacity:.5;font-size:10px;line-height:1" title="מחק קטגוריה">✕</span>';
+    html += '<button class="tab' + active + '" data-tab="' + cat + '" onclick="switchTab(\'' + cat + '\')">' +
+      icon + cat + delBtn + '</button>';
   });
+
+  html += '<button class="tab' + (S.activeTab === TAB_SUMMARY ? ' active' : '') + '" data-tab="סיכום" onclick="switchTab(\'סיכום\')">📊 סיכום</button>';
+  html += '<button class="tab" onclick="promptAddCategory()" title="הוסף קטגוריה" style="font-size:18px;padding:6px 14px">＋</button>';
+  bar.innerHTML = html;
+
+  // Update form category select
+  var sel = document.getElementById('f-cat');
+  if (sel) {
+    var prev = sel.value;
+    sel.innerHTML = cats.map(function(c) {
+      return '<option value="' + c + '"' + (c === prev ? ' selected' : '') + '>' + c + '</option>';
+    }).join('');
+  }
+}
+
+function promptAddCategory() {
+  var name = prompt('שם הקטגוריה החדשה:');
+  if (!name) return;
+  name = name.trim();
+  if (!name || S.portfolio[name] !== undefined) return;
+  S.portfolio[name] = [];
+  apiFetch('/api/portfolio', { method: 'POST', json: S.portfolio });
+  renderTabs();
+  switchTab(name);
+}
+
+function deleteCategory(cat) {
+  var items = (S.portfolio[cat] || []).length;
+  var msg   = items > 0
+    ? 'למחוק קטגוריה "' + cat + '" עם ' + items + ' השקעות?'
+    : 'למחוק קטגוריה "' + cat + '"?';
+  if (!confirm(msg)) return;
+  delete S.portfolio[cat];
+  apiFetch('/api/portfolio', { method: 'POST', json: S.portfolio });
+  var first = Object.keys(S.portfolio)[0] || TAB_SUMMARY;
+  renderTabs();
+  switchTab(first);
+}
+
+function switchTab(tab) {
+  S.activeTab = tab;
+  renderTabs();
   renderActiveTab();
   if (tab === TAB_STOCKS) fetchTargets();
 
@@ -186,11 +239,6 @@ function switchTab(tab, scroll) {
     if (autoTicker) onRowClick(autoTicker);
   } else {
     closeChart();
-  }
-
-  if (scroll) {
-    var el = document.getElementById('main-content');
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
