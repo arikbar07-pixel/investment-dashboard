@@ -396,7 +396,7 @@ def get_news(ticker):
         anthropic_key = os.environ.get('ANTHROPIC_KEY', '')
         if not anthropic_key:
             result = [{'date': datetime.fromtimestamp(n.get('datetime',0)).strftime('%d.%m.%Y'),
-                       'headline': n.get('headline',''), 'why': '', 'url': n.get('url','')}
+                       'headline': n.get('headline',''), 'summary': n.get('summary','')}
                       for n in raw[:8]]
             _cache[key] = {'ts': time.time(), 'data': result}
             return jsonify(result)
@@ -404,12 +404,11 @@ def get_news(ticker):
         import anthropic as ac
         client = ac.Anthropic(api_key=anthropic_key)
 
-        system_prompt = """You are a financial news filter for a long-term investor who does not actively trade
-and holds index funds, crypto, and a small number of individual stocks for learning purposes.
+        system_prompt = """You are a financial news analyst for a long-term investor holding index funds, crypto, and a few individual stocks.
 
 Keep only news that:
-- Directly impacts the price or outlook of the specific asset mentioned
-- Reports macro events with clear market implications (Fed decisions, CPI, GDP, employment data)
+- Directly impacts the price or outlook of the specific asset
+- Reports macro events with clear market implications (Fed decisions, CPI, GDP, employment)
 - Covers crypto regulation or legal decisions
 - Reports major earnings results
 - Covers significant geopolitical events with direct market impact
@@ -418,17 +417,20 @@ Keep only news that:
 Filter out:
 - Corporate PR and marketing announcements
 - General sector commentary not tied to the specific asset
-- Opinion pieces without concrete facts or events
+- Opinion pieces without concrete facts
 - News older than 48 hours
 - Vague predictions without factual basis
 
-For each relevant item respond in this exact JSON format (array):
-[{"date":"DD.MM.YYYY","headline":"...","why":"1-2 sentences in Hebrew explaining why this affects the asset and what the potential impact is"}]
+For each relevant item, write a clear summary IN HEBREW of what happened and why it matters for this specific asset.
+The summary should be 2-4 sentences: first explain what happened, then explain the potential market impact.
+
+Respond in this exact JSON format:
+[{"date":"DD.MM.YYYY","headline":"כותרת בעברית","summary":"סיכום בעברית של האירוע והשפעתו הצפויה על הנכס"}]
 Return ONLY the JSON array, no other text."""
 
         msg = client.messages.create(
             model='claude-haiku-4-5-20251001',
-            max_tokens=1500,
+            max_tokens=2000,
             system=system_prompt,
             messages=[{'role': 'user', 'content': f'Asset: {ticker}\n\nNews:\n{news_text}'}]
         )
@@ -440,14 +442,6 @@ Return ONLY the JSON array, no other text."""
             if text.startswith('json'):
                 text = text[4:]
         filtered = _json.loads(text.strip())
-
-        # attach URLs from original news matched by headline
-        url_map = {n.get('headline','')[:40]: n.get('url','') for n in raw}
-        for item in filtered:
-            for h, u in url_map.items():
-                if h and item.get('headline','').startswith(h[:30]):
-                    item['url'] = u
-                    break
 
         _cache[key] = {'ts': time.time(), 'data': filtered}
         return jsonify(filtered)
