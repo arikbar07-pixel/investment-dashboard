@@ -530,17 +530,12 @@ function loadChart(range) {
           var chgStr = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
           var chgColor = chg >= 0 ? '#3fb950' : '#f85149';
           tooltip.innerHTML =
-            '<span style="color:#8b949e">' + (typeof d.time === 'string' ? d.time : new Date(d.time * 1000).toLocaleDateString()) + '</span><br>' +
-            'פתיחה: $' + fmtPrice(d.open) + '<br>' +
-            'גבוה: $' + fmtPrice(d.high) + '<br>' +
-            'נמוך: $' + fmtPrice(d.low) + '<br>' +
-            'סגירה: $' + fmtPrice(d.close) + '<br>' +
-            '<span style="color:' + chgColor + ';font-weight:700">שינוי: ' + chgStr + '</span>';
+            '$' + fmtPrice(d.close) + ' &nbsp;<span style="color:' + chgColor + ';font-weight:700">' + chgStr + '</span>';
           tooltip.style.display = 'block';
           var x = param.point ? param.point.x : 0;
-          var left = x < container.clientWidth / 2 ? (x + 16) : (x - 180);
+          var left = x < container.clientWidth / 2 ? (x + 12) : (x - 120);
           tooltip.style.left = left + 'px';
-          tooltip.style.top  = '16px';
+          tooltip.style.top  = '10px';
         });
       } else {
         var color = isUp ? '#3fb950' : '#f85149';
