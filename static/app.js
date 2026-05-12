@@ -432,10 +432,19 @@ function onRowClick(ticker) {
 }
 
 var _priceChart = null;
+S.chartType = 'line';
+
+function setChartType(type) {
+  S.chartType = type;
+  document.querySelectorAll('[data-type]').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.type === type);
+  });
+  loadChart(S.chartRange);
+}
 
 function closeChart() {
   document.getElementById('chart-panel').style.display = 'none';
-  if (_priceChart) { _priceChart.destroy(); _priceChart = null; }
+  if (_priceChart) { _priceChart.remove(); _priceChart = null; }
   S.chartTicker = null;
 }
 
@@ -471,73 +480,52 @@ function loadChart(range) {
       var container = document.getElementById('tv-chart');
       if (!container) return;
 
-      // Destroy old chart
-      if (_priceChart) { _priceChart.destroy(); _priceChart = null; }
-      container.innerHTML = '<canvas id="price-canvas"></canvas>';
-      var canvas = document.getElementById('price-canvas');
-      canvas.style.height = '260px';
+      if (_priceChart) { _priceChart.remove(); _priceChart = null; }
+      container.innerHTML = '';
+      container.style.height = '280px';
 
-      var labels = points.map(function(p) {
-        // Format: DD.MM or HH:MM for intraday
-        if (p.date && p.date.includes('T')) {
-          return p.date.slice(11, 16);
-        }
-        var parts = p.date.split('-');
-        return parts[2] + '.' + parts[1];
-      });
-      var values = points.map(function(p) { return p.price; });
-      var first  = values[0], last = values[values.length - 1];
-      var isUp   = last >= first;
-      var color  = isUp ? '#3fb950' : '#f85149';
+      var first = points[0].price, last = points[points.length - 1].price;
+      var isUp  = last >= first;
 
-      _priceChart = new Chart(canvas.getContext('2d'), {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            data: values,
-            borderColor: color,
-            borderWidth: 2,
-            backgroundColor: 'transparent',
-            fill: false,
-            tension: 0.3,
-            pointRadius: 0,
-            pointHoverRadius: 4,
-            pointHoverBackgroundColor: color
-          }]
+      _priceChart = LightweightCharts.createChart(container, {
+        width:  container.clientWidth,
+        height: 280,
+        layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
+        grid: {
+          vertLines: { color: 'rgba(48,54,61,0.4)' },
+          horzLines: { color: 'rgba(48,54,61,0.4)' }
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(ctx) { return '$' + fmtPrice(ctx.parsed.y); }
-              },
-              backgroundColor: '#21262d',
-              borderColor: '#30363d',
-              borderWidth: 1,
-              titleColor: '#8b949e',
-              bodyColor: '#f0f6fc'
-            }
-          },
-          scales: {
-            x: {
-              grid: { color: 'rgba(48,54,61,0.4)' },
-              ticks: { color: '#8b949e', maxTicksLimit: 6, maxRotation: 0 }
-            },
-            y: {
-              position: 'left',
-              grid: { color: 'rgba(48,54,61,0.4)' },
-              ticks: {
-                color: '#8b949e',
-                callback: function(v) { return '$' + fmtPrice(v); }
-              }
-            }
-          }
-        }
+        rightPriceScale: { borderColor: '#30363d' },
+        timeScale: { borderColor: '#30363d', timeVisible: true, secondsVisible: false },
+        crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+      });
+
+      if (S.chartType === 'candle') {
+        var series = _priceChart.addCandlestickSeries({
+          upColor:        '#3fb950',
+          downColor:      '#f85149',
+          borderUpColor:  '#3fb950',
+          borderDownColor:'#f85149',
+          wickUpColor:    '#3fb950',
+          wickDownColor:  '#f85149'
+        });
+        series.setData(points.map(function(p) {
+          return { time: p.date, open: p.open, high: p.high, low: p.low, close: p.price };
+        }));
+      } else {
+        var color = isUp ? '#3fb950' : '#f85149';
+        var series = _priceChart.addLineSeries({
+          color: color, lineWidth: 2, priceLineVisible: false, lastValueVisible: true
+        });
+        series.setData(points.map(function(p) {
+          return { time: p.date, value: p.price };
+        }));
+      }
+
+      _priceChart.timeScale().fitContent();
+
+      window.addEventListener('resize', function() {
+        if (_priceChart) _priceChart.applyOptions({ width: container.clientWidth });
       });
     })
     .catch(function(e) { console.error('[chart]', e); });

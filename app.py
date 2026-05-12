@@ -347,7 +347,13 @@ def get_chart(ticker):
 
         points = []
         for ts, row in hist.iterrows():
-            points.append({'date': ts.strftime(fmt), 'price': round(float(row['Close']), 4)})
+            points.append({
+                'date':  ts.strftime(fmt),
+                'open':  round(float(row['Open']),  4),
+                'high':  round(float(row['High']),  4),
+                'low':   round(float(row['Low']),   4),
+                'price': round(float(row['Close']), 4)
+            })
 
         _cache[key] = {'ts': time.time(), 'data': points}
         fh = _cache.get('price:' + ticker)
