@@ -447,7 +447,7 @@ function loadChart(range) {
   if (!S.chartTicker) return;
 
   var ticker     = S.chartTicker;
-  var rangeLabels = { '7d': 'שבוע', '1mo': 'חודש', '3mo': '3 חודשים', '1y': 'שנה' };
+  var rangeLabels = { '1d': 'יומי', '7d': 'שבוע', '1mo': 'חודש', '3mo': '3 חודשים', '1y': 'שנה' };
   var chgEl      = document.getElementById('chart-change');
 
   // Period % change label
@@ -477,12 +477,18 @@ function loadChart(range) {
       var canvas = document.getElementById('price-canvas');
       canvas.style.height = '260px';
 
-      var labels = points.map(function(p) { return p.date; });
+      var labels = points.map(function(p) {
+        // Format: DD.MM or HH:MM for intraday
+        if (p.date && p.date.includes('T')) {
+          return p.date.slice(11, 16);
+        }
+        var parts = p.date.split('-');
+        return parts[2] + '.' + parts[1];
+      });
       var values = points.map(function(p) { return p.price; });
       var first  = values[0], last = values[values.length - 1];
       var isUp   = last >= first;
       var color  = isUp ? '#3fb950' : '#f85149';
-      var colorFade = isUp ? 'rgba(63,185,80,0.12)' : 'rgba(248,81,73,0.12)';
 
       _priceChart = new Chart(canvas.getContext('2d'), {
         type: 'line',
@@ -492,8 +498,8 @@ function loadChart(range) {
             data: values,
             borderColor: color,
             borderWidth: 2,
-            backgroundColor: colorFade,
-            fill: true,
+            backgroundColor: 'transparent',
+            fill: false,
             tension: 0.3,
             pointRadius: 0,
             pointHoverRadius: 4,
@@ -520,13 +526,7 @@ function loadChart(range) {
           scales: {
             x: {
               grid: { color: 'rgba(48,54,61,0.4)' },
-              ticks: {
-                color: '#8b949e', maxTicksLimit: 6, maxRotation: 0,
-                callback: function(val, i) {
-                  var d = labels[i]; if (!d) return '';
-                  return d.slice(5);
-                }
-              }
+              ticks: { color: '#8b949e', maxTicksLimit: 6, maxRotation: 0 }
             },
             y: {
               position: 'left',

@@ -251,6 +251,20 @@ def usd_ils():
 def period_change(ticker):
     range_    = request.args.get('range', '1mo')
     key       = 'pchg:' + ticker + ':' + range_
+
+    # 1d: use Finnhub real-time change_pct directly
+    if range_ == '1d':
+        fh = _cache.get('price:' + ticker)
+        if fh and fh['data'] and fh['data'].get('change_pct') is not None:
+            return jsonify({'pct': round(float(fh['data']['change_pct']), 2)})
+        try:
+            symbol = fh_symbol(ticker)
+            data   = fh_get('quote', {'symbol': symbol})
+            pct    = data.get('dp', 0)
+            return jsonify({'pct': round(float(pct), 2)})
+        except Exception:
+            return jsonify({'pct': None})
+
     days_back = {'7d': 7, '1mo': 30, '3mo': 91, '1y': 365}.get(range_, 30)
 
     cached_val = _cache.get(key)
@@ -307,28 +321,35 @@ def get_target(ticker):
 def get_chart(ticker):
     range_    = request.args.get('range', '1mo')
     key       = 'chart:' + ticker + ':' + range_
+    intraday  = range_ == '1d'
     days_back = {'7d': 7, '1mo': 30, '3mo': 91, '1y': 365}.get(range_, 30)
+    cache_ttl = 60 if intraday else 300
 
     cached_val = _cache.get(key)
-    if cached_val and time.time() - cached_val['ts'] < 300:
-        data = cached_val['data']
-        # inject live price as last point
+    if cached_val and time.time() - cached_val['ts'] < cache_ttl:
+        data = list(cached_val['data'])
         fh = _cache.get('price:' + ticker)
         if fh and fh['data'] and fh['data'].get('price') and data:
-            data = list(data)
             data[-1] = {'date': data[-1]['date'], 'price': fh['data']['price']}
         return jsonify(data)
 
     try:
-        start = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
-        hist  = yf.Ticker(ticker).history(start=start, interval='1d')
+        if intraday:
+            hist = yf.Ticker(ticker).history(period='1d', interval='5m')
+            fmt  = '%Y-%m-%dT%H:%M'
+        else:
+            start = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+            hist  = yf.Ticker(ticker).history(start=start, interval='1d')
+            fmt   = '%Y-%m-%d'
+
         if hist.empty:
             return jsonify([])
+
         points = []
         for ts, row in hist.iterrows():
-            points.append({'date': ts.strftime('%Y-%m-%d'), 'price': round(float(row['Close']), 4)})
+            points.append({'date': ts.strftime(fmt), 'price': round(float(row['Close']), 4)})
+
         _cache[key] = {'ts': time.time(), 'data': points}
-        # inject live price
         fh = _cache.get('price:' + ticker)
         if fh and fh['data'] and fh['data'].get('price') and points:
             points[-1] = {'date': points[-1]['date'], 'price': fh['data']['price']}
