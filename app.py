@@ -185,21 +185,28 @@ def get_price(ticker):
 @app.route('/api/history/<path:ticker>/<date>')
 def get_history(ticker, date):
     try:
-        symbol  = fh_symbol(ticker)
-        dt      = datetime.strptime(date, '%Y-%m-%d')
-        period1 = int(dt.timestamp())
-        period2 = int((dt + timedelta(days=7)).timestamp())
+        dt = datetime.strptime(date, '%Y-%m-%d')
 
-        endpoint = 'crypto/candle' if is_crypto(ticker) else 'stock/candle'
-        data = fh_get(endpoint, {
-            'symbol': symbol, 'resolution': 'D',
-            'from': period1, 'to': period2
-        })
+        # Use yfinance for historical price (works for stocks + crypto)
+        hist = yf.Ticker(ticker).history(
+            start=(dt - timedelta(days=5)).strftime('%Y-%m-%d'),
+            end=(dt + timedelta(days=5)).strftime('%Y-%m-%d'),
+            interval='1d'
+        )
 
-        if data.get('s') == 'ok' and data.get('c'):
-            return jsonify({'price': round(float(data['c'][0]), 6)})
+        if not hist.empty:
+            import pandas as pd
+            tz = hist.index.tz
+            target = pd.Timestamp(dt.date()).tz_localize(tz) if tz else pd.Timestamp(dt.date())
+            past = hist[hist.index <= target]
+            if past.empty:
+                past = hist
+            price = float(past['Close'].iloc[-1])
+            return jsonify({'price': round(price, 6)})
 
-        quote = fh_get('quote', {'symbol': symbol})
+        # Fallback: Finnhub current price
+        symbol = fh_symbol(ticker)
+        quote  = fh_get('quote', {'symbol': symbol})
         return jsonify({'price': round(float(quote['c']), 6), 'fallback': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 404
@@ -294,6 +301,41 @@ def get_target(ticker):
         return jsonify(cached('target:' + ticker, 3600, fetch))
     except Exception:
         return jsonify({'target': None})
+
+
+@app.route('/api/chart/<path:ticker>')
+def get_chart(ticker):
+    range_    = request.args.get('range', '1mo')
+    key       = 'chart:' + ticker + ':' + range_
+    days_back = {'7d': 7, '1mo': 30, '3mo': 91, '1y': 365}.get(range_, 30)
+
+    cached_val = _cache.get(key)
+    if cached_val and time.time() - cached_val['ts'] < 300:
+        data = cached_val['data']
+        # inject live price as last point
+        fh = _cache.get('price:' + ticker)
+        if fh and fh['data'] and fh['data'].get('price') and data:
+            data = list(data)
+            data[-1] = {'date': data[-1]['date'], 'price': fh['data']['price']}
+        return jsonify(data)
+
+    try:
+        start = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+        hist  = yf.Ticker(ticker).history(start=start, interval='1d')
+        if hist.empty:
+            return jsonify([])
+        points = []
+        for ts, row in hist.iterrows():
+            points.append({'date': ts.strftime('%Y-%m-%d'), 'price': round(float(row['Close']), 4)})
+        _cache[key] = {'ts': time.time(), 'data': points}
+        # inject live price
+        fh = _cache.get('price:' + ticker)
+        if fh and fh['data'] and fh['data'].get('price') and points:
+            points[-1] = {'date': points[-1]['date'], 'price': fh['data']['price']}
+        return jsonify(points)
+    except Exception as e:
+        print(f'[chart] {ticker}: {e}')
+        return jsonify([])
 
 
 if __name__ == '__main__':

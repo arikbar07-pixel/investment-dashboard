@@ -8,7 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
 
@@ -79,13 +78,14 @@
         </div>
 
         <div class="field narrow">
-          <label>סכום ($)</label>
-          <input type="number" id="f-usd" placeholder="0.00" step="0.01" min="0">
-        </div>
-
-        <div class="field narrow">
-          <label>סכום (₪)</label>
-          <input type="number" id="f-ils" placeholder="0.00" step="0.01" min="0">
+          <label>סכום</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="f-amount" placeholder="0.00" step="0.01" min="0" style="flex:1">
+            <select id="f-currency" style="width:62px;padding:8px 6px;background:var(--surface2);border:1px solid var(--border);color:var(--text-bright);border-radius:var(--radius-sm);font-size:13px;font-family:inherit">
+              <option value="USD">$</option>
+              <option value="ILS">₪</option>
+            </select>
+          </div>
         </div>
 
         <div class="field narrow">

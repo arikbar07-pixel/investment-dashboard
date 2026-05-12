@@ -50,7 +50,6 @@ var CRYPTO_TABS = ['BTC', 'ETH'];
 document.addEventListener('DOMContentLoaded', function() {
   startClock();
   setupAutocomplete();
-  setupIlsAutoFill();
   init();
 });
 
@@ -432,10 +431,11 @@ function onRowClick(ticker) {
   loadChart(S.chartRange);
 }
 
+var _priceChart = null;
+
 function closeChart() {
   document.getElementById('chart-panel').style.display = 'none';
-  var container = document.getElementById('tv-chart');
-  if (container) container.innerHTML = '';
+  if (_priceChart) { _priceChart.destroy(); _priceChart = null; }
   S.chartTicker = null;
 }
 
@@ -446,23 +446,16 @@ function loadChart(range) {
   });
   if (!S.chartTicker) return;
 
-  // Calculate period % change
-  var days = { '7d': 7, '1mo': 30, '3mo': 90, '1y': 365 };
-  var daysBack = days[range] || 30;
-  var startDate = new Date(Date.now() - daysBack * 86400000);
-  var dateStr = startDate.toISOString().split('T')[0];
-  var ticker = S.chartTicker;
-
+  var ticker     = S.chartTicker;
   var rangeLabels = { '7d': 'שבוע', '1mo': 'חודש', '3mo': '3 חודשים', '1y': 'שנה' };
-  var chgEl = document.getElementById('chart-change');
+  var chgEl      = document.getElementById('chart-change');
 
+  // Period % change label
   apiFetch('/api/period_change/' + encodeURIComponent(ticker) + '?range=' + range)
     .then(function(d) {
       if (!chgEl) return;
       if (!d || d.pct === null || d.pct === undefined) {
-        chgEl.textContent = '—';
-        chgEl.style.color = 'var(--text-muted)';
-        return;
+        chgEl.textContent = '—'; chgEl.style.color = 'var(--text-muted)'; return;
       }
       chgEl.textContent = (d.pct >= 0 ? '+' : '') + d.pct.toFixed(2) + '% (' + (rangeLabels[range] || range) + ')';
       chgEl.style.color = d.pct >= 0 ? 'var(--green)' : 'var(--red)';
@@ -471,31 +464,83 @@ function loadChart(range) {
       if (chgEl) { chgEl.textContent = '—'; chgEl.style.color = 'var(--text-muted)'; }
     });
 
-  var container = document.getElementById('tv-chart');
-  if (!container) return;
-  container.innerHTML = '';
+  // Fetch chart data and draw
+  apiFetch('/api/chart/' + encodeURIComponent(ticker) + '?range=' + range)
+    .then(function(points) {
+      if (!points || !points.length) return;
+      var container = document.getElementById('tv-chart');
+      if (!container) return;
 
-  new TradingView.widget({
-    container_id:        'tv-chart',
-    width:               '100%',
-    height:              280,
-    symbol:              toTvSymbol(S.chartTicker),
-    interval:            'D',
-    range:               TV_RANGES[range] || '1M',
-    theme:               'dark',
-    style:               '1',
-    locale:              'en',
-    toolbar_bg:          '#161b22',
-    backgroundColor:     'rgba(13,17,23,1)',
-    gridColor:           'rgba(48,54,61,0.5)',
-    enable_publishing:   false,
-    hide_top_toolbar:    false,
-    hide_legend:         false,
-    hide_volume:         true,
-    save_image:          false,
-    allow_symbol_change: false,
-    withdateranges:      false
-  });
+      // Destroy old chart
+      if (_priceChart) { _priceChart.destroy(); _priceChart = null; }
+      container.innerHTML = '<canvas id="price-canvas"></canvas>';
+      var canvas = document.getElementById('price-canvas');
+      canvas.style.height = '260px';
+
+      var labels = points.map(function(p) { return p.date; });
+      var values = points.map(function(p) { return p.price; });
+      var first  = values[0], last = values[values.length - 1];
+      var isUp   = last >= first;
+      var color  = isUp ? '#3fb950' : '#f85149';
+      var colorFade = isUp ? 'rgba(63,185,80,0.12)' : 'rgba(248,81,73,0.12)';
+
+      _priceChart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            borderColor: color,
+            borderWidth: 2,
+            backgroundColor: colorFade,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            pointHoverBackgroundColor: color
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) { return '$' + fmtPrice(ctx.parsed.y); }
+              },
+              backgroundColor: '#21262d',
+              borderColor: '#30363d',
+              borderWidth: 1,
+              titleColor: '#8b949e',
+              bodyColor: '#f0f6fc'
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(48,54,61,0.4)' },
+              ticks: {
+                color: '#8b949e', maxTicksLimit: 6, maxRotation: 0,
+                callback: function(val, i) {
+                  var d = labels[i]; if (!d) return '';
+                  return d.slice(5);
+                }
+              }
+            },
+            y: {
+              position: 'left',
+              grid: { color: 'rgba(48,54,61,0.4)' },
+              ticks: {
+                color: '#8b949e',
+                callback: function(v) { return '$' + fmtPrice(v); }
+              }
+            }
+          }
+        }
+      });
+    })
+    .catch(function(e) { console.error('[chart]', e); });
 }
 
 // --- Analyst targets ---
@@ -589,35 +634,32 @@ async function tryFetchHistoricPrice() {
     var d = await apiFetch('/api/history/' + encodeURIComponent(ticker) + '/' + date);
     prev.className = 'form-preview ok';
     prev.innerHTML = '✓ מחיר ' + ticker + ' ב-' + fmtDate(date) + ': <strong>$' + fmtPrice(d.price) + '</strong>' + (d.fallback ? ' (מחיר נוכחי)' : '');
-    var usd = parseFloat(document.getElementById('f-usd').value);
-    if (usd && !document.getElementById('f-ils').value) {
-      document.getElementById('f-ils').value = (usd * S.usdIls).toFixed(0);
-    }
   } catch(e) {
     prev.className = 'form-preview err';
     prev.textContent = '✕ לא נמצא מחיר לתאריך זה';
   }
 }
 
-function setupIlsAutoFill() {
-  document.getElementById('f-usd').addEventListener('input', function() {
-    var usd = parseFloat(document.getElementById('f-usd').value);
-    var ils = document.getElementById('f-ils');
-    if (usd && !ils.value) ils.value = (usd * S.usdIls).toFixed(0);
-  });
-}
-
 async function addInvestment() {
-  var ticker = (_selTicker || document.getElementById('f-ticker').value).trim().toUpperCase();
-  var name   = _selName || ticker;
-  var date   = document.getElementById('f-date').value;
-  var usd    = parseFloat(document.getElementById('f-usd').value);
-  var ils    = parseFloat(document.getElementById('f-ils').value);
-  var cat    = document.getElementById('f-cat').value;
+  var ticker   = (_selTicker || document.getElementById('f-ticker').value).trim().toUpperCase();
+  var name     = _selName || ticker;
+  var date     = document.getElementById('f-date').value;
+  var amount   = parseFloat(document.getElementById('f-amount').value);
+  var currency = document.getElementById('f-currency').value;
+  var cat      = document.getElementById('f-cat').value;
 
-  if (!ticker || !date || !usd || !ils) {
-    showPreview('err', '✕ יש למלא: טיקר, תאריך, סכום בדולרים וסכום בשקלים');
+  if (!ticker || !date || !amount) {
+    showPreview('err', '✕ יש למלא: טיקר, תאריך וסכום');
     return;
+  }
+
+  var usd, ils;
+  if (currency === 'USD') {
+    usd = amount;
+    ils = parseFloat((amount * S.usdIls).toFixed(2));
+  } else {
+    ils = amount;
+    usd = parseFloat((amount / S.usdIls).toFixed(2));
   }
 
   var btn = document.querySelector('.btn-add');
@@ -661,7 +703,7 @@ async function addInvestment() {
 }
 
 function resetForm() {
-  ['f-ticker','f-date','f-usd','f-ils'].forEach(function(id) {
+  ['f-ticker','f-date','f-amount'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
   document.getElementById('f-name-hint').textContent = '';
