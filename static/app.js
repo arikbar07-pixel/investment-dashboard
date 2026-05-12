@@ -500,6 +500,12 @@ function loadChart(range) {
         crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
       });
 
+      // Custom tooltip div
+      var tooltip = document.createElement('div');
+      tooltip.style.cssText = 'position:absolute;display:none;background:#21262d;border:1px solid #30363d;border-radius:6px;padding:8px 12px;font-size:12px;color:#f0f6fc;pointer-events:none;z-index:999;line-height:1.6;';
+      container.style.position = 'relative';
+      container.appendChild(tooltip);
+
       if (S.chartType === 'candle') {
         var series = _priceChart.addCandlestickSeries({
           upColor:        '#3fb950',
@@ -509,9 +515,33 @@ function loadChart(range) {
           wickUpColor:    '#3fb950',
           wickDownColor:  '#f85149'
         });
-        series.setData(points.map(function(p) {
+        var candleData = points.map(function(p) {
           return { time: p.date, open: p.open, high: p.high, low: p.low, close: p.price };
-        }));
+        });
+        series.setData(candleData);
+
+        _priceChart.subscribeCrosshairMove(function(param) {
+          if (!param || !param.time || !param.seriesData) {
+            tooltip.style.display = 'none'; return;
+          }
+          var d = param.seriesData.get(series);
+          if (!d) { tooltip.style.display = 'none'; return; }
+          var chg    = d.open ? ((d.close - d.open) / d.open * 100) : 0;
+          var chgStr = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
+          var chgColor = chg >= 0 ? '#3fb950' : '#f85149';
+          tooltip.innerHTML =
+            '<span style="color:#8b949e">' + (typeof d.time === 'string' ? d.time : new Date(d.time * 1000).toLocaleDateString()) + '</span><br>' +
+            'פתיחה: $' + fmtPrice(d.open) + '<br>' +
+            'גבוה: $' + fmtPrice(d.high) + '<br>' +
+            'נמוך: $' + fmtPrice(d.low) + '<br>' +
+            'סגירה: $' + fmtPrice(d.close) + '<br>' +
+            '<span style="color:' + chgColor + ';font-weight:700">שינוי: ' + chgStr + '</span>';
+          tooltip.style.display = 'block';
+          var x = param.point ? param.point.x : 0;
+          var left = x < container.clientWidth / 2 ? (x + 16) : (x - 180);
+          tooltip.style.left = left + 'px';
+          tooltip.style.top  = '16px';
+        });
       } else {
         var color = isUp ? '#3fb950' : '#f85149';
         var series = _priceChart.addLineSeries({
