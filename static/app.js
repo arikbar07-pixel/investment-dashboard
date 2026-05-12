@@ -169,12 +169,16 @@ function renderSummaryCards() {
 
 // --- Tabs ---
 
-var TAB_ICONS = { 'BTC': '₿ ', 'ETH': '⟠ ', 'סיכום': '📊 ' };
+var TAB_ICONS  = { 'BTC': '₿ ', 'ETH': '⟠ ', 'סיכום': '📊 ' };
+var TAB_ORDER  = ['מניות', 'VOO', 'QQQ', 'BTC', 'ETH'];
 
 function renderTabs() {
   var bar = document.getElementById('tabs-bar');
   if (!bar) return;
-  var cats = Object.keys(S.portfolio);
+  var all  = Object.keys(S.portfolio);
+  // Sort: known order first, then any extras alphabetically
+  var cats = TAB_ORDER.filter(function(t) { return all.indexOf(t) !== -1; })
+    .concat(all.filter(function(t) { return TAB_ORDER.indexOf(t) === -1; }));
   var html = '';
 
   cats.forEach(function(cat) {
