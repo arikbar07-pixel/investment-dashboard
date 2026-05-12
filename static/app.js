@@ -429,6 +429,35 @@ function onRowClick(ticker) {
   chgEl.style.color = 'var(--text-muted)';
   document.getElementById('chart-panel').style.display = 'block';
   loadChart(S.chartRange);
+  loadNews(ticker);
+}
+
+function loadNews(ticker) {
+  var section  = document.getElementById('news-section');
+  var list     = document.getElementById('news-list');
+  section.style.display = 'block';
+  list.innerHTML = '<div style="color:#8b949e;font-size:12px;padding:8px 0">⟳ טוען חדשות...</div>';
+
+  apiFetch('/api/news/' + encodeURIComponent(ticker))
+    .then(function(items) {
+      if (!items || !items.length) {
+        list.innerHTML = '<div style="color:#8b949e;font-size:12px;padding:8px 0">לא נמצאו חדשות רלוונטיות</div>';
+        return;
+      }
+      list.innerHTML = items.map(function(n) {
+        var urlAttr = n.url ? ' href="' + n.url + '" target="_blank"' : '';
+        return '<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #30363d">' +
+          '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:4px">' +
+          '<a' + urlAttr + ' style="font-size:13px;font-weight:600;color:#f0f6fc;text-decoration:none;flex:1;line-height:1.4">' + n.headline + '</a>' +
+          '<span style="font-size:11px;color:#8b949e;white-space:nowrap">' + (n.date || '') + '</span>' +
+          '</div>' +
+          (n.why ? '<div style="font-size:12px;color:#8b949e;line-height:1.5">' + n.why + '</div>' : '') +
+          '</div>';
+      }).join('');
+    })
+    .catch(function() {
+      list.innerHTML = '<div style="color:#f85149;font-size:12px">שגיאה בטעינת חדשות</div>';
+    });
 }
 
 var _priceChart = null;
@@ -444,6 +473,7 @@ function setChartType(type) {
 
 function closeChart() {
   document.getElementById('chart-panel').style.display = 'none';
+  document.getElementById('news-section').style.display = 'none';
   if (_priceChart) { _priceChart.remove(); _priceChart = null; }
   S.chartTicker = null;
 }

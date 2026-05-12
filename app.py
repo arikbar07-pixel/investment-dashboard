@@ -365,6 +365,98 @@ def get_chart(ticker):
         return jsonify([])
 
 
+@app.route('/api/news/<path:ticker>')
+def get_news(ticker):
+    key = 'news:' + ticker
+    cached_val = _cache.get(key)
+    if cached_val and time.time() - cached_val['ts'] < 1800:
+        return jsonify(cached_val['data'])
+
+    try:
+        symbol   = fh_symbol(ticker).replace('BINANCE:', '')
+        date_to  = datetime.now().strftime('%Y-%m-%d')
+        date_from = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+
+        if is_crypto(ticker):
+            raw = fh_get('news', {'category': 'crypto', 'minId': 0})
+            raw = [n for n in raw if any(k in (n.get('headline','') + n.get('summary','')).upper()
+                   for k in [ticker.replace('-USD',''), 'BTC', 'ETH', 'BITCOIN', 'ETHEREUM'])][:20]
+        else:
+            raw = fh_get('company-news', {'symbol': ticker, 'from': date_from, 'to': date_to})
+
+        if not raw:
+            return jsonify([])
+
+        # Build news text for Claude
+        news_text = ''
+        for i, n in enumerate(raw[:20]):
+            ts   = datetime.fromtimestamp(n.get('datetime', 0)).strftime('%d.%m.%Y')
+            news_text += f"{i+1}. [{ts}] {n.get('headline','')}\n{n.get('summary','')}\n\n"
+
+        anthropic_key = os.environ.get('ANTHROPIC_KEY', '')
+        if not anthropic_key:
+            result = [{'date': datetime.fromtimestamp(n.get('datetime',0)).strftime('%d.%m.%Y'),
+                       'headline': n.get('headline',''), 'why': '', 'url': n.get('url','')}
+                      for n in raw[:8]]
+            _cache[key] = {'ts': time.time(), 'data': result}
+            return jsonify(result)
+
+        import anthropic as ac
+        client = ac.Anthropic(api_key=anthropic_key)
+
+        system_prompt = """You are a financial news filter for a long-term investor who does not actively trade
+and holds index funds, crypto, and a small number of individual stocks for learning purposes.
+
+Keep only news that:
+- Directly impacts the price or outlook of the specific asset mentioned
+- Reports macro events with clear market implications (Fed decisions, CPI, GDP, employment data)
+- Covers crypto regulation or legal decisions
+- Reports major earnings results
+- Covers significant geopolitical events with direct market impact
+- Contains company-specific events (leadership changes, lawsuits, acquisitions, analyst upgrades/downgrades)
+
+Filter out:
+- Corporate PR and marketing announcements
+- General sector commentary not tied to the specific asset
+- Opinion pieces without concrete facts or events
+- News older than 48 hours
+- Vague predictions without factual basis
+
+For each relevant item respond in this exact JSON format (array):
+[{"date":"DD.MM.YYYY","headline":"...","why":"1-2 sentences in Hebrew explaining why this affects the asset and what the potential impact is"}]
+Return ONLY the JSON array, no other text."""
+
+        msg = client.messages.create(
+            model='claude-haiku-4-5-20251001',
+            max_tokens=1500,
+            system=system_prompt,
+            messages=[{'role': 'user', 'content': f'Asset: {ticker}\n\nNews:\n{news_text}'}]
+        )
+
+        import json as _json
+        text = msg.content[0].text.strip()
+        if text.startswith('```'):
+            text = text.split('```')[1]
+            if text.startswith('json'):
+                text = text[4:]
+        filtered = _json.loads(text.strip())
+
+        # attach URLs from original news matched by headline
+        url_map = {n.get('headline','')[:40]: n.get('url','') for n in raw}
+        for item in filtered:
+            for h, u in url_map.items():
+                if h and item.get('headline','').startswith(h[:30]):
+                    item['url'] = u
+                    break
+
+        _cache[key] = {'ts': time.time(), 'data': filtered}
+        return jsonify(filtered)
+
+    except Exception as e:
+        print(f'[news] {ticker}: {e}')
+        return jsonify([])
+
+
 if __name__ == '__main__':
     print('=' * 50)
     print('  דשבורד השקעות מופעל')
