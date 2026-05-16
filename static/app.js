@@ -360,7 +360,7 @@ function renderSummaryTab() {
     gCurIls += curIls;
     var pct = invIls ? (curIls - invIls) / invIls * 100 : 0;
     var cls = pct >= 0 ? 'pos' : 'neg';
-    return '<tr onclick="switchTab(\'' + cat.clickTab + '\')">' +
+    return '<tr>' +
       '<td class="td-ticker">' + cat.label + '</td>' +
       '<td>' + invs.length + ' פוזיציות</td>' +
       '<td>$' + fmt2(invUsd) + '</td>' +
