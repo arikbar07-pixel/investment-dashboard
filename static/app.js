@@ -662,8 +662,10 @@ async function fetchTargets() {
 
 function toggleForm() {
   S.formOpen = !S.formOpen;
-  document.getElementById('form-body').style.display = S.formOpen ? 'block' : 'none';
-  document.getElementById('form-icon').textContent = S.formOpen ? '▲' : '▼';
+  var panel   = document.getElementById('form-panel');
+  var overlay = document.getElementById('form-overlay');
+  panel.classList.toggle('open', S.formOpen);
+  if (overlay) overlay.style.display = S.formOpen ? 'block' : 'none';
 }
 
 var _acTimer = null;
