@@ -485,15 +485,20 @@ async function renderPortfolioChart() {
     var data = await apiFetch('/api/portfolio/history');
     if (!data || !data.length) return;
 
+    // Add 6 future placeholder months so the chart looks like a full timeline
+    var monthLabelsHe = {'01':'ינו׳','02':'פבר׳','03':'מרץ','04':'אפר׳','05':'מאי','06':'יוני','07':'יולי','08':'אוג׳','09':'ספט׳','10':'אוק׳','11':'נוב׳','12':'דצמ׳'};
+    var lastDate = new Date();
+    for (var fi = 1; fi <= 6; fi++) {
+      var fd = new Date(lastDate.getFullYear(), lastDate.getMonth() + fi, 1);
+      var fmm = String(fd.getMonth() + 1).padStart(2, '0');
+      var fyy = String(fd.getFullYear()).slice(2);
+      data.push({ label: monthLabelsHe[fmm] + " '" + fyy, value: null, live: false });
+    }
+
     var labels = data.map(function(d) { return d.label; });
     var values = data.map(function(d) { return d.value; });
 
     var ctx = canvas.getContext('2d');
-
-    // Gradient fill
-    var gradient = ctx.createLinearGradient(0, 0, 0, 250);
-    gradient.addColorStop(0, 'rgba(78,222,163,0.55)');
-    gradient.addColorStop(1, 'rgba(78,222,163,0.04)');
 
     if (S.perfChart) { S.perfChart.destroy(); S.perfChart = null; }
 
