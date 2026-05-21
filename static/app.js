@@ -496,6 +496,8 @@ async function renderPortfolioChart() {
 
     if (S.perfChart) { S.perfChart.destroy(); S.perfChart = null; }
 
+    var liveFlags = data.map(function(d) { return d.live; });
+
     S.perfChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -503,15 +505,11 @@ async function renderPortfolioChart() {
         datasets: [{
           label: 'שווי תיק (₪)',
           data: values,
-          backgroundColor: values.map(function(v, i) {
-            return i === values.length - 1
-              ? 'rgba(78,222,163,0.90)'
-              : 'rgba(78,222,163,0.45)';
+          backgroundColor: liveFlags.map(function(live) {
+            return live ? 'rgba(182,196,255,0.85)' : 'rgba(78,222,163,0.50)';
           }),
-          borderColor: values.map(function(v, i) {
-            return i === values.length - 1
-              ? 'rgba(78,222,163,1)'
-              : 'rgba(78,222,163,0.7)';
+          borderColor: liveFlags.map(function(live) {
+            return live ? 'rgba(182,196,255,1)' : 'rgba(78,222,163,0.8)';
           }),
           borderWidth: 1,
           borderRadius: 5,

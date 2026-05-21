@@ -148,89 +148,71 @@ def index():
 @login_required
 def portfolio_history():
     portfolio = load_portfolio()
-    all_investments = []
-    for cat_investments in portfolio.values():
-        if isinstance(cat_investments, list):
-            all_investments.extend(cat_investments)
-    if not all_investments:
-        return jsonify([])
-
-    tickers = list(set(inv['ticker'] for inv in all_investments if inv.get('purchase_price')))
-
-    # Fetch monthly close prices for each ticker (1 year)
-    ticker_history = {}
-    for ticker in tickers:
-        try:
-            hist = yf.Ticker(ticker).history(period='13mo', interval='1mo')
-            if not hist.empty:
-                ticker_history[ticker] = {}
-                for date, row in hist.iterrows():
-                    ticker_history[ticker][date.strftime('%Y-%m')] = round(float(row['Close']), 4)
-        except Exception:
-            pass
-
-    # Also fetch current prices as fallback for the most recent month
-    current_prices = {}
-    for ticker in tickers:
-        try:
-            info = yf.Ticker(ticker).history(period='1d', interval='1d')
-            if not info.empty:
-                current_prices[ticker] = round(float(info['Close'].iloc[-1]), 4)
-        except Exception:
-            pass
-
-    def get_price(ticker, month_key):
-        """Return best available price for ticker in given month. Falls back to nearest past month."""
-        hist = ticker_history.get(ticker, {})
-        if month_key in hist:
-            return hist[month_key]
-        # Use nearest available month <= month_key
-        past = sorted([k for k in hist if k <= month_key], reverse=True)
-        if past:
-            return hist[past[0]]
-        # Last resort: current price (for very recent data gaps)
-        return current_prices.get(ticker)
-
-    # Fetch USD/ILS monthly rates
-    ils_rates = {}
-    try:
-        hist = yf.Ticker('ILS=X').history(period='13mo', interval='1mo')
-        for date, row in hist.iterrows():
-            ils_rates[date.strftime('%Y-%m')] = round(float(row['Close']), 4)
-    except Exception:
-        pass
-
-    fallback_rate = 3.65
     today = datetime.now()
+    current_month = today.strftime('%Y-%m')
+
     month_labels_he = {
         '01':'ינו׳','02':'פבר׳','03':'מרץ','04':'אפר׳',
         '05':'מאי','06':'יוני','07':'יולי','08':'אוג׳',
         '09':'ספט׳','10':'אוק׳','11':'נוב׳','12':'דצמ׳'
     }
 
+    def month_label(month_key):
+        mm = month_key.split('-')[1]
+        yy = month_key[2:4]
+        return month_labels_he.get(mm, mm) + " '" + yy
+
+    # Collect all investments
+    all_investments = [inv for cat in portfolio.values()
+                       if isinstance(cat, list) for inv in cat]
+    if not all_investments:
+        return jsonify([])
+
+    # Fetch current prices for all tickers
+    tickers = list(set(inv['ticker'] for inv in all_investments if inv.get('purchase_price')))
+    current_prices = {}
+    for ticker in tickers:
+        try:
+            h = yf.Ticker(ticker).history(period='2d', interval='1d')
+            if not h.empty:
+                current_prices[ticker] = round(float(h['Close'].iloc[-1]), 4)
+        except Exception:
+            pass
+
+    # Fetch current USD/ILS rate
+    try:
+        rate_h = yf.Ticker('ILS=X').history(period='2d', interval='1d')
+        current_rate = round(float(rate_h['Close'].iloc[-1]), 4) if not rate_h.empty else 3.65
+    except Exception:
+        current_rate = 3.65
+
+    # Calculate live portfolio value right now
+    live_value = 0.0
+    for inv in all_investments:
+        if not inv.get('purchase_price') or inv['purchase_price'] == 0:
+            continue
+        price = current_prices.get(inv['ticker'])
+        if not price:
+            continue
+        qty = inv['invested_usd'] / inv['purchase_price']
+        live_value += qty * price * current_rate
+
+    # Save current month snapshot (overwrites on every call — freezes naturally when month ends)
+    snapshots = dict(portfolio.get('_snapshots', {}))
+    snapshots[current_month] = round(live_value, 2)
+    portfolio['_snapshots'] = snapshots
+    save_portfolio_data(portfolio)
+
+    # Build result: past frozen snapshots + current live bar
     result = []
-    for i in range(11, -1, -1):
-        d = today.replace(day=1) - relativedelta(months=i)
-        month_key = d.strftime('%Y-%m')
-        mm = d.strftime('%m')
-        yy = d.strftime('%y')
-        label = month_labels_he.get(mm, mm) + " '" + yy
-
-        total_ils = 0
-        for inv in all_investments:
-            if not inv.get('purchase_price') or inv['purchase_price'] == 0:
-                continue
-            if inv.get('purchase_date', '') > month_key + '-31':
-                continue
-            ticker = inv['ticker']
-            price = get_price(ticker, month_key)
-            if not price:
-                continue
-            rate = ils_rates.get(month_key, fallback_rate)
-            qty = inv['invested_usd'] / inv['purchase_price']
-            total_ils += qty * price * rate
-
-        result.append({'month': month_key, 'label': label, 'value': round(total_ils, 2)})
+    for month_key in sorted(snapshots.keys()):
+        is_live = (month_key == current_month)
+        result.append({
+            'month': month_key,
+            'label': month_label(month_key),
+            'value': snapshots[month_key],
+            'live': is_live
+        })
 
     return jsonify(result)
 
