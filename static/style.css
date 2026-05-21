@@ -266,6 +266,34 @@ body {
 .sidebar-nav .tab:hover span[onclick] { opacity: .6; }
 .sidebar-nav .tab:hover span[onclick]:hover { opacity: 1; color: var(--red); }
 
+/* Logout button at bottom of sidebar */
+.sidebar-bottom {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.btn-logout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background .18s, color .18s;
+  font-family: inherit;
+}
+.btn-logout:hover {
+  background: rgba(255,180,171,.10);
+  color: var(--red);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    MAIN LAYOUT
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -682,6 +710,28 @@ tr.tr-total td { font-weight: 700; color: var(--text-bright); }
   justify-content: center;
 }
 .pie-wrap canvas { max-width: 220px; max-height: 220px; }
+
+/* Portfolio performance chart */
+.perf-chart-section {
+  margin-top: 22px;
+  border-radius: var(--radius);
+  padding: 20px 22px 22px;
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--border);
+  border-top-color: var(--border-top);
+}
+.perf-chart-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  color: var(--text-muted);
+  margin-bottom: 18px;
+}
+.perf-chart-wrap {
+  height: 250px;
+  position: relative;
+}
 
 /* Group label rows */
 tr.tr-group-label { background: rgba(255,255,255,.02) !important; cursor: default; }

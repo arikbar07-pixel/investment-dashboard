@@ -9,6 +9,7 @@ var S = {
   chartTicker: null,
   chartRange:  '1mo',
   pieChart:    null,
+  perfChart:   null,
   formOpen:    false
 };
 
@@ -248,10 +249,12 @@ function switchTab(tab) {
 
 function renderActiveTab() {
   var el = document.getElementById('main-content');
-  if (S.pieChart) { S.pieChart.destroy(); S.pieChart = null; }
+  if (S.pieChart)  { S.pieChart.destroy();  S.pieChart  = null; }
+  if (S.perfChart) { S.perfChart.destroy(); S.perfChart = null; }
   if (S.activeTab === TAB_SUMMARY) {
     el.innerHTML = renderSummaryTab();
     renderPieChart();
+    renderPortfolioChart();
   } else {
     var investments = S.portfolio[S.activeTab] || [];
     el.innerHTML = renderTable(investments, S.activeTab === TAB_STOCKS);
@@ -391,6 +394,10 @@ function renderSummaryTab() {
     '<td class="td-pct ' + gCls + '">' + ((gCurIls - gInvIls) >= 0 ? '+' : '') + '₪' + fmt2(gCurIls - gInvIls) + '</td>' +
     '</tr></tbody></table></div>' +
     '<div class="pie-wrap"><canvas id="pie-chart"></canvas></div>' +
+    '</div>' +
+    '<div class="perf-chart-section">' +
+    '<div class="perf-chart-title">ביצועי תיק לאורך זמן (₪)</div>' +
+    '<div class="perf-chart-wrap"><canvas id="portfolio-perf-chart"></canvas></div>' +
     '</div>';
 }
 
@@ -465,6 +472,93 @@ function renderPieChart() {
       }
     }
   });
+}
+
+// --- Portfolio performance chart ---
+
+async function renderPortfolioChart() {
+  var canvas = document.getElementById('portfolio-perf-chart');
+  if (!canvas) return;
+
+  try {
+    var data = await apiFetch('/api/portfolio/history');
+    if (!data || !data.length) return;
+
+    var labels = data.map(function(d) { return d.label; });
+    var values = data.map(function(d) { return d.value; });
+
+    var ctx = canvas.getContext('2d');
+
+    // Gradient fill
+    var gradient = ctx.createLinearGradient(0, 0, 0, 250);
+    gradient.addColorStop(0, 'rgba(78,222,163,0.55)');
+    gradient.addColorStop(1, 'rgba(78,222,163,0.04)');
+
+    if (S.perfChart) { S.perfChart.destroy(); S.perfChart = null; }
+
+    S.perfChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'שווי תיק (₪)',
+          data: values,
+          backgroundColor: values.map(function(v, i) {
+            return i === values.length - 1
+              ? 'rgba(78,222,163,0.90)'
+              : 'rgba(78,222,163,0.45)';
+          }),
+          borderColor: values.map(function(v, i) {
+            return i === values.length - 1
+              ? 'rgba(78,222,163,1)'
+              : 'rgba(78,222,163,0.7)';
+          }),
+          borderWidth: 1,
+          borderRadius: 5,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#161b22',
+            borderColor: '#30363d',
+            borderWidth: 1,
+            titleColor: '#8b949e',
+            bodyColor: '#e2e2e8',
+            callbacks: {
+              title: function(items) { return items[0].label; },
+              label: function(ctx) {
+                return '  ₪' + Math.round(ctx.parsed.y).toLocaleString('en-US');
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(48,54,61,0.35)', drawBorder: false },
+            ticks: { color: '#8d90a1', font: { size: 11 } }
+          },
+          y: {
+            grid: { color: 'rgba(48,54,61,0.35)', drawBorder: false },
+            ticks: {
+              color: '#8d90a1',
+              font: { size: 11 },
+              callback: function(v) {
+                if (v >= 1000) return '₪' + (v / 1000).toFixed(0) + 'k';
+                return '₪' + v;
+              }
+            }
+          }
+        }
+      }
+    });
+  } catch(e) {
+    console.error('[perf chart]', e);
+  }
 }
 
 // --- Chart ---
