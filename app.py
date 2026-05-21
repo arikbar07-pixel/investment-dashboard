@@ -169,6 +169,28 @@ def portfolio_history():
         except Exception:
             pass
 
+    # Also fetch current prices as fallback for the most recent month
+    current_prices = {}
+    for ticker in tickers:
+        try:
+            info = yf.Ticker(ticker).history(period='1d', interval='1d')
+            if not info.empty:
+                current_prices[ticker] = round(float(info['Close'].iloc[-1]), 4)
+        except Exception:
+            pass
+
+    def get_price(ticker, month_key):
+        """Return best available price for ticker in given month. Falls back to nearest past month."""
+        hist = ticker_history.get(ticker, {})
+        if month_key in hist:
+            return hist[month_key]
+        # Use nearest available month <= month_key
+        past = sorted([k for k in hist if k <= month_key], reverse=True)
+        if past:
+            return hist[past[0]]
+        # Last resort: current price (for very recent data gaps)
+        return current_prices.get(ticker)
+
     # Fetch USD/ILS monthly rates
     ils_rates = {}
     try:
@@ -201,7 +223,7 @@ def portfolio_history():
             if inv.get('purchase_date', '') > month_key + '-31':
                 continue
             ticker = inv['ticker']
-            price = ticker_history.get(ticker, {}).get(month_key)
+            price = get_price(ticker, month_key)
             if not price:
                 continue
             rate = ils_rates.get(month_key, fallback_rate)
