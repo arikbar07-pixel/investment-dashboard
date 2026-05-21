@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Equitas Premium - Investment Portfolio</title>
+  <title>דשבורד השקעות</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
@@ -13,141 +13,103 @@
 </head>
 <body>
 
+  <!-- Ambient glow -->
+  <div class="ambient-bg"></div>
+
   <!-- ═══ TOP NAV ══════════════════════════════════════════════════════════ -->
   <nav class="top-nav">
     <div class="nav-brand">
-      <span class="nav-title">Equitas Premium</span>
+      <span class="nav-logo">📈</span>
+      <span class="nav-title">EquityFlow</span>
     </div>
-    <div class="nav-center-search">
-      <span class="material-symbols-outlined search-icon">search</span>
-      <input type="text" placeholder="חפש נכסים..." class="search-input">
+
+    <div class="nav-status">
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-text" id="status-text">מתחבר...</span>
     </div>
+
     <div class="nav-end">
-      <div class="nav-status">
-        <span class="status-dot" id="status-dot"></span>
-        <span class="status-text" id="status-text">מתחבר...</span>
-      </div>
       <div class="clock" id="clock"></div>
-      <button class="nav-icon-btn"><span class="material-symbols-outlined">notifications</span></button>
-      <button class="nav-icon-btn"><span class="material-symbols-outlined">settings</span></button>
-      <div class="nav-avatar">AB</div>
+      <button class="btn-add-nav" onclick="toggleForm()">
+        <span class="material-symbols-outlined" style="font-size:17px;vertical-align:-3px;margin-left:4px">add</span>
+        הוסף נכס
+      </button>
     </div>
   </nav>
 
-  <!-- ═══ LAYOUT SHELL ═════════════════════════════════════════════════════ -->
-  <div class="layout-shell">
+  <!-- ═══ SIDEBAR ══════════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-label">קטגוריות</div>
+    <div class="sidebar-nav" id="tabs-bar"></div>
+  </aside>
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <h2 class="sidebar-brand-title">Investment Portfolio</h2>
-        <p class="sidebar-brand-sub">Wealth Management</p>
+  <!-- ═══ MAIN ═════════════════════════════════════════════════════════════ -->
+  <main class="main-layout">
+
+    <!-- Summary cards -->
+    <div class="summary-grid">
+      <div class="glass-card stat-item anim-in" style="animation-delay:.05s">
+        <span class="stat-label">סה"כ הושקע</span>
+        <span class="stat-value" id="stat-invested">—</span>
       </div>
-
-      <nav class="sidebar-nav" id="tabs-bar"></nav>
-
-      <button class="btn-add-sidebar" onclick="toggleForm()">
-        <span class="material-symbols-outlined" style="font-size:18px">add</span>
-        הוסף נכס
-      </button>
-
-      <div class="sidebar-footer">
-        <div class="sidebar-footer-item">
-          <span class="material-symbols-outlined">help</span>
-          <span>Support</span>
-        </div>
-        <div class="sidebar-footer-item">
-          <span class="material-symbols-outlined">logout</span>
-          <span>Log Out</span>
-        </div>
+      <div class="glass-card stat-item anim-in" style="animation-delay:.10s">
+        <span class="stat-label">שווי נוכחי</span>
+        <span class="stat-value val-primary" id="stat-current">—</span>
       </div>
-    </aside>
+      <div class="glass-card stat-item anim-in" style="animation-delay:.15s">
+        <span class="stat-label">רווח / הפסד</span>
+        <span class="stat-value" id="stat-pnl">—</span>
+      </div>
+      <div class="glass-card stat-item anim-in" style="animation-delay:.20s">
+        <span class="stat-label">תשואה כוללת</span>
+        <span class="stat-value" id="stat-return">—</span>
+      </div>
+      <div class="glass-card stat-item anim-in" style="animation-delay:.25s">
+        <span class="stat-label">$/₪</span>
+        <span class="stat-value" id="stat-rate">—</span>
+      </div>
+    </div>
 
-    <!-- MAIN CANVAS -->
-    <main class="main-canvas">
+    <!-- Main content card -->
+    <div class="content-card glass-card anim-in" style="animation-delay:.35s">
+      <div id="main-content">
+        <div class="spinner">⟳ טוען נתונים...</div>
+      </div>
+    </div>
 
-      <!-- Stats grid -->
-      <div class="stats-grid">
-        <div class="stat-card-new">
-          <div class="stat-card-top">
-            <span class="stat-icon-wrap primary-icon"><span class="material-symbols-outlined">account_balance_wallet</span></span>
-            <span class="stat-badge" id="stat-badge-invested"></span>
-          </div>
-          <p class="stat-card-label">סה"כ הושקע</p>
-          <h3 class="stat-card-value" id="stat-invested">—</h3>
+    <!-- Chart Panel -->
+    <div class="chart-panel glass-card" id="chart-panel" style="display:none">
+      <div class="chart-top">
+        <div class="chart-info">
+          <span class="chart-ticker-label" id="chart-ticker"></span>
+          <span class="chart-price-label"  id="chart-price"></span>
+          <span class="chart-change-label" id="chart-change"></span>
         </div>
-        <div class="stat-card-new">
-          <div class="stat-card-top">
-            <span class="stat-icon-wrap secondary-icon"><span class="material-symbols-outlined">insights</span></span>
-            <span class="stat-badge green" id="stat-badge-current"></span>
+        <div class="chart-controls">
+          <div class="range-group">
+            <button class="range-btn" data-range="1d"  onclick="loadChart('1d')">יומי</button>
+            <button class="range-btn" data-range="7d"  onclick="loadChart('7d')">שבוע</button>
+            <button class="range-btn active" data-range="1mo" onclick="loadChart('1mo')">חודש</button>
+            <button class="range-btn" data-range="3mo" onclick="loadChart('3mo')">3 חודשים</button>
+            <button class="range-btn" data-range="1y"  onclick="loadChart('1y')">שנה</button>
           </div>
-          <p class="stat-card-label">שווי נוכחי</p>
-          <h3 class="stat-card-value primary-val" id="stat-current">—</h3>
-        </div>
-        <div class="stat-card-new">
-          <div class="stat-card-top">
-            <span class="stat-icon-wrap green-icon"><span class="material-symbols-outlined">trending_up</span></span>
+          <div class="range-group">
+            <button class="range-btn active" data-type="line"   onclick="setChartType('line')">קו</button>
+            <button class="range-btn"        data-type="candle" onclick="setChartType('candle')">נרות</button>
           </div>
-          <p class="stat-card-label">רווח / הפסד</p>
-          <h3 class="stat-card-value" id="stat-pnl">—</h3>
-        </div>
-        <div class="stat-card-new">
-          <div class="stat-card-top">
-            <span class="stat-icon-wrap tertiary-icon"><span class="material-symbols-outlined">percent</span></span>
-          </div>
-          <p class="stat-card-label">תשואה כוללת</p>
-          <h3 class="stat-card-value" id="stat-return">—</h3>
-        </div>
-        <div class="stat-card-new">
-          <div class="stat-card-top">
-            <span class="stat-icon-wrap rate-icon"><span class="material-symbols-outlined">currency_exchange</span></span>
-          </div>
-          <p class="stat-card-label">$/₪</p>
-          <h3 class="stat-card-value" id="stat-rate">—</h3>
+          <button class="btn-close" onclick="closeChart()">✕</button>
         </div>
       </div>
-
-      <!-- Main content card -->
-      <div class="content-card-new">
-        <div id="main-content">
-          <div class="spinner">⟳ טוען נתונים...</div>
-        </div>
+      <div class="chart-body">
+        <div id="tv-chart"></div>
       </div>
-
-      <!-- Chart Panel -->
-      <div class="chart-panel" id="chart-panel" style="display:none">
-        <div class="chart-top">
-          <div class="chart-info">
-            <span class="chart-ticker-label" id="chart-ticker"></span>
-            <span class="chart-price-label"  id="chart-price"></span>
-            <span class="chart-change-label" id="chart-change"></span>
-          </div>
-          <div class="chart-controls">
-            <div class="range-group">
-              <button class="range-btn" data-range="1d"  onclick="loadChart('1d')">יומי</button>
-              <button class="range-btn" data-range="7d"  onclick="loadChart('7d')">שבוע</button>
-              <button class="range-btn active" data-range="1mo" onclick="loadChart('1mo')">חודש</button>
-              <button class="range-btn" data-range="3mo" onclick="loadChart('3mo')">3 חודשים</button>
-              <button class="range-btn" data-range="1y"  onclick="loadChart('1y')">שנה</button>
-            </div>
-            <div class="range-group">
-              <button class="range-btn active" data-type="line"   onclick="setChartType('line')">קו</button>
-              <button class="range-btn"        data-type="candle" onclick="setChartType('candle')">נרות</button>
-            </div>
-            <button class="btn-close" onclick="closeChart()">✕</button>
-          </div>
-        </div>
-        <div class="chart-body">
-          <div id="tv-chart"></div>
-        </div>
-        <div id="news-section" style="padding:0 18px 18px;display:none">
-          <div class="news-section-label">חדשות רלוונטיות</div>
-          <div id="news-list"></div>
-        </div>
+      <div id="news-section" style="padding:0 18px 18px;display:none">
+        <div class="news-section-label">חדשות רלוונטיות</div>
+        <div id="news-list"></div>
       </div>
+    </div>
 
-    </main>
-  </div>
+  </main>
 
   <!-- ═══ SLIDE-IN FORM PANEL ══════════════════════════════════════════════ -->
   <div class="form-panel" id="form-panel">
@@ -157,6 +119,7 @@
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
+
     <div id="form-body" class="form-slide-body">
 
       <div class="form-slide-field">
@@ -191,22 +154,13 @@
 
       <div class="form-preview" id="form-preview"></div>
 
-      <button class="btn-add btn-add-full" onclick="addInvestment()">שמור בתיק ההשקעות</button>
+      <button class="btn-add btn-add-full" onclick="addInvestment()">הוסף לתיק</button>
 
-      <div class="form-security-note">
-        <span class="material-symbols-outlined" style="color:var(--green);font-size:18px">verified_user</span>
-        <span>הנתונים מאובטחים ומוצפנים מקצה לקצה.</span>
-      </div>
     </div>
   </div>
 
-  <!-- Backdrop -->
+  <!-- Backdrop overlay -->
   <div id="form-overlay" onclick="toggleForm()"></div>
-
-  <!-- ═══ FAB ══════════════════════════════════════════════════════════════ -->
-  <button class="fab" onclick="toggleForm()" title="הוסף נכס">
-    <span class="material-symbols-outlined" style="font-size:28px">add</span>
-  </button>
 
   <!-- ═══ MOBILE BOTTOM NAV ════════════════════════════════════════════════ -->
   <nav class="mobile-nav">
