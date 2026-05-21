@@ -731,6 +731,11 @@ tr.tr-total td { font-weight: 700; color: var(--text-bright); }
 .perf-chart-wrap {
   height: 250px;
   position: relative;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.perf-chart-wrap canvas {
+  display: block;
 }
 
 /* Group label rows */

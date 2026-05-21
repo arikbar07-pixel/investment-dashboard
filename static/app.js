@@ -502,6 +502,15 @@ async function renderPortfolioChart() {
 
     if (S.perfChart) { S.perfChart.destroy(); S.perfChart = null; }
 
+    // Set canvas width so every bar is at least 56px — enables horizontal scroll for many months
+    var BAR_W = 56;
+    var minW   = labels.length * BAR_W;
+    var wrapW  = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
+    canvas.style.width  = Math.max(minW, wrapW) + 'px';
+    canvas.style.height = '250px';
+    canvas.width  = Math.max(minW, wrapW);
+    canvas.height = 250;
+
     var liveFlags = data.map(function(d) { return d.live; });
 
     S.perfChart = new Chart(ctx, {
@@ -523,7 +532,7 @@ async function renderPortfolioChart() {
         }]
       },
       options: {
-        responsive: true,
+        responsive: false,
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
