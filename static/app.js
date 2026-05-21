@@ -176,7 +176,8 @@ var TAB_ORDER  = ['מניות', 'VOO', 'QQQ', 'BTC', 'ETH'];
 function renderTabs() {
   var bar = document.getElementById('tabs-bar');
   if (!bar) return;
-  var all  = Object.keys(S.portfolio);
+  // Filter out internal keys (starting with _)
+  var all  = Object.keys(S.portfolio).filter(function(k) { return k[0] !== '_'; });
   // Sort: known order first, then any extras alphabetically
   var cats = TAB_ORDER.filter(function(t) { return all.indexOf(t) !== -1; })
     .concat(all.filter(function(t) { return TAB_ORDER.indexOf(t) === -1; }));
@@ -963,6 +964,7 @@ function getAllTickers() {
 function getAllInvestments() {
   var all = [];
   Object.keys(S.portfolio).forEach(function(k) {
+    if (k[0] === '_') return; // skip internal keys
     (S.portfolio[k] || []).forEach(function(inv) { all.push(inv); });
   });
   return all;
