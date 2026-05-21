@@ -2,6 +2,7 @@ import json
 import os
 import time
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from flask import Flask, jsonify, render_template, request, session, redirect, url_for
 import requests
 import yfinance as yf
@@ -187,7 +188,7 @@ def portfolio_history():
 
     result = []
     for i in range(11, -1, -1):
-        d = (today.replace(day=1) - timedelta(days=i * 28))
+        d = today.replace(day=1) - relativedelta(months=i)
         month_key = d.strftime('%Y-%m')
         mm = d.strftime('%m')
         yy = d.strftime('%y')
