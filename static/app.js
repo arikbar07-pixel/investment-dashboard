@@ -224,8 +224,7 @@ function renderMobileNav() {
   var cats = TAB_ORDER.filter(function(t) { return all.indexOf(t) !== -1; })
     .concat(all.filter(function(t) { return TAB_ORDER.indexOf(t) === -1; }))
     .concat(['סיכום']);
-  var html = '<button class="mob-fab" onclick="toggleForm()">' +
-    '<span class="material-symbols-outlined">add</span></button>';
+  var html = '';
   cats.forEach(function(tab) {
     var icon   = MOB_ICONS[tab] || 'bar_chart';
     var active = S.activeTab === tab ? ' mob-active' : '';
@@ -233,6 +232,8 @@ function renderMobileNav() {
       '<span class="material-symbols-outlined">' + icon + '</span>' +
       '<span>' + tab + '</span></button>';
   });
+  html += '<button class="mob-fab" onclick="toggleForm()">' +
+    '<span class="material-symbols-outlined">add</span></button>';
   nav.innerHTML = html;
 }
 

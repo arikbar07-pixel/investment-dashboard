@@ -763,6 +763,7 @@ tr.tr-group-label td {
   overflow-x: auto;
   gap: 4px;
   padding: 0 8px;
+  direction: ltr;
 }
 .mob-btn.mob-active { color: var(--primary); }
 .mob-btn {
