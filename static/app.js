@@ -78,7 +78,6 @@ async function init() {
     S.usdIls = results[1].rate || 3.65;
     await refreshPrices();
     renderTabs();
-    document.querySelectorAll('.stat-full').forEach(function(el) { el.style.display = 'none'; });
     switchTab(TAB_STOCKS);
     setStatus('live');
   } catch(e) {
@@ -275,10 +274,8 @@ function switchTab(tab) {
   S.activeTab = tab;
   renderTabs();
   renderActiveTab();
-  var isSummary = tab === TAB_SUMMARY;
-  document.querySelectorAll('.stat-full').forEach(function(el) {
-    el.style.display = isSummary ? '' : 'none';
-  });
+  var grid = document.querySelector('.summary-grid');
+  if (grid) grid.style.display = tab === TAB_SUMMARY ? '' : 'none';
   if (tab === TAB_STOCKS) fetchTargets();
 
   if (tab !== TAB_STOCKS && tab !== TAB_SUMMARY) {
