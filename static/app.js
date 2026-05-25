@@ -759,7 +759,7 @@ function drawChart(points) {
       borderColor: chartBdr,
       timeVisible: true,
       secondsVisible: false,
-      tickMarkFormatter: (S.chartRange === '7d' || S.chartRange === '1mo') ? function(time) {
+      tickMarkFormatter: (S.chartRange === '7d' || S.chartRange === '1mo' || S.chartRange === '3mo') ? function(time) {
         if (typeof time !== 'string') return '';
         var p = time.split('-');
         return parseInt(p[2]) + '.' + parseInt(p[1]);
