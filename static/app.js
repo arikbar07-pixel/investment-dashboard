@@ -671,7 +671,8 @@ function setChartType(type) {
   });
   var key = S.chartTicker + ':' + S.chartRange;
   if (_chartCache[key]) {
-    drawChart(_chartCache[key]); // instant — no network call
+    var cached = _chartCache[key];
+    requestAnimationFrame(function() { drawChart(cached); });
   } else {
     loadChart(S.chartRange);
   }
@@ -709,9 +710,10 @@ function loadChart(range) {
       if (chgEl) { chgEl.textContent = '—'; chgEl.style.color = 'var(--text-muted)'; }
     });
 
-  // Draw immediately from cache if available
+  // Draw from cache — defer one frame so the panel has time to layout
   if (_chartCache[key]) {
-    drawChart(_chartCache[key]);
+    var cached = _chartCache[key];
+    requestAnimationFrame(function() { drawChart(cached); });
     return;
   }
 
@@ -735,8 +737,9 @@ function drawChart(points) {
   var first = points[0].price, last = points[points.length - 1].price;
   var isUp  = last >= first;
 
+  var chartW = container.clientWidth || container.parentElement.clientWidth || 700;
   _priceChart = LightweightCharts.createChart(container, {
-    width:  container.clientWidth,
+    width:  chartW,
     height: 280,
     layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
     grid: {
