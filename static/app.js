@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function applyTheme(theme) {
   document.body.classList.toggle('light', theme === 'light');
   var btn = document.getElementById('theme-btn');
-  if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+  if (btn) btn.textContent = theme === 'light' ? '●' : '○';
 }
 
 function toggleTheme() {
@@ -659,6 +659,7 @@ function loadNews(ticker) {
 }
 
 var _priceChart = null;
+var _chartCache = {}; // key: "ticker:range" -> points array
 S.chartType = 'line';
 
 function setChartType(type) {
@@ -666,7 +667,12 @@ function setChartType(type) {
   document.querySelectorAll('[data-type]').forEach(function(b) {
     b.classList.toggle('active', b.dataset.type === type);
   });
-  loadChart(S.chartRange);
+  var key = S.chartTicker + ':' + S.chartRange;
+  if (_chartCache[key]) {
+    drawChart(_chartCache[key]); // instant — no network call
+  } else {
+    loadChart(S.chartRange);
+  }
 }
 
 function closeChart() {
@@ -683,11 +689,11 @@ function loadChart(range) {
   });
   if (!S.chartTicker) return;
 
-  var ticker     = S.chartTicker;
+  var ticker      = S.chartTicker;
+  var key         = ticker + ':' + range;
   var rangeLabels = { '1d': 'יומי', '7d': 'שבוע', '1mo': 'חודש', '3mo': '3 חודשים', '1y': 'שנה' };
-  var chgEl      = document.getElementById('chart-change');
+  var chgEl       = document.getElementById('chart-change');
 
-  // Period % change label
   apiFetch('/api/period_change/' + encodeURIComponent(ticker) + '?range=' + range)
     .then(function(d) {
       if (!chgEl) return;
@@ -701,92 +707,85 @@ function loadChart(range) {
       if (chgEl) { chgEl.textContent = '—'; chgEl.style.color = 'var(--text-muted)'; }
     });
 
-  // Fetch chart data and draw
+  // Draw immediately from cache if available
+  if (_chartCache[key]) {
+    drawChart(_chartCache[key]);
+    return;
+  }
+
   apiFetch('/api/chart/' + encodeURIComponent(ticker) + '?range=' + range)
     .then(function(points) {
       if (!points || !points.length) return;
-      var container = document.getElementById('tv-chart');
-      if (!container) return;
-
-      if (_priceChart) { _priceChart.remove(); _priceChart = null; }
-      container.innerHTML = '';
-      container.style.height = '280px';
-
-      var first = points[0].price, last = points[points.length - 1].price;
-      var isUp  = last >= first;
-
-      _priceChart = LightweightCharts.createChart(container, {
-        width:  container.clientWidth,
-        height: 280,
-        layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
-        grid: {
-          vertLines: { color: 'rgba(48,54,61,0.4)' },
-          horzLines: { color: 'rgba(48,54,61,0.4)' }
-        },
-        rightPriceScale: { borderColor: '#30363d' },
-        timeScale: { borderColor: '#30363d', timeVisible: true, secondsVisible: false },
-        crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
-      });
-
-      // Custom tooltip div
-      var tooltip = document.createElement('div');
-      tooltip.style.cssText = 'position:absolute;display:none;background:#21262d;border:1px solid #30363d;border-radius:5px;padding:5px 8px;font-size:11px;color:#f0f6fc;pointer-events:none;z-index:999;line-height:1.5;';
-      container.style.position = 'relative';
-      container.appendChild(tooltip);
-
-      if (S.chartType === 'candle') {
-        var series = _priceChart.addCandlestickSeries({
-          upColor:        '#3fb950',
-          downColor:      '#f85149',
-          borderUpColor:  '#3fb950',
-          borderDownColor:'#f85149',
-          wickUpColor:    '#3fb950',
-          wickDownColor:  '#f85149'
-        });
-        var candleData = points.map(function(p) {
-          return { time: p.date, open: p.open, high: p.high, low: p.low, close: p.price };
-        });
-        series.setData(candleData);
-
-        _priceChart.subscribeCrosshairMove(function(param) {
-          if (!param || !param.time || !param.seriesData) {
-            tooltip.style.display = 'none'; return;
-          }
-          var d = param.seriesData.get(series);
-          if (!d) { tooltip.style.display = 'none'; return; }
-          var chg    = d.open ? ((d.close - d.open) / d.open * 100) : 0;
-          var chgStr = (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%';
-          var chgColor = chg >= 0 ? '#3fb950' : '#f85149';
-          tooltip.innerHTML =
-            '<span style="color:#8b949e">' + (typeof d.time === 'string' ? d.time : new Date(d.time * 1000).toLocaleDateString()) + '</span><br>' +
-            'פתיחה: $' + fmtPrice(d.open) + '<br>' +
-            'גבוה: $' + fmtPrice(d.high) + '<br>' +
-            'נמוך: $' + fmtPrice(d.low) + '<br>' +
-            'סגירה: $' + fmtPrice(d.close) + '<br>' +
-            '<span style="color:' + chgColor + ';font-weight:700">שינוי: ' + chgStr + '</span>';
-          tooltip.style.display = 'block';
-          var x = param.point ? param.point.x : 0;
-          var left = x < container.clientWidth / 2 ? (x + 12) : (x - 145);
-          tooltip.style.left = left + 'px';
-          tooltip.style.top  = '10px';
-        });
-      } else {
-        var color = isUp ? '#3fb950' : '#f85149';
-        var series = _priceChart.addLineSeries({
-          color: color, lineWidth: 2, priceLineVisible: false, lastValueVisible: true
-        });
-        series.setData(points.map(function(p) {
-          return { time: p.date, value: p.price };
-        }));
-      }
-
-      _priceChart.timeScale().fitContent();
-
-      window.addEventListener('resize', function() {
-        if (_priceChart) _priceChart.applyOptions({ width: container.clientWidth });
-      });
+      _chartCache[key] = points;
+      if (S.chartTicker === ticker && S.chartRange === range) drawChart(points);
     })
     .catch(function(e) { console.error('[chart]', e); });
+}
+
+function drawChart(points) {
+  var container = document.getElementById('tv-chart');
+  if (!container || !points || !points.length) return;
+
+  if (_priceChart) { _priceChart.remove(); _priceChart = null; }
+  container.innerHTML = '';
+  container.style.height = '280px';
+
+  var first = points[0].price, last = points[points.length - 1].price;
+  var isUp  = last >= first;
+
+  _priceChart = LightweightCharts.createChart(container, {
+    width:  container.clientWidth,
+    height: 280,
+    layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
+    grid: {
+      vertLines: { color: 'rgba(48,54,61,0.4)' },
+      horzLines: { color: 'rgba(48,54,61,0.4)' }
+    },
+    rightPriceScale: { borderColor: '#30363d' },
+    timeScale: { borderColor: '#30363d', timeVisible: true, secondsVisible: false },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
+  });
+
+  var tooltip = document.createElement('div');
+  tooltip.style.cssText = 'position:absolute;display:none;background:#21262d;border:1px solid #30363d;border-radius:5px;padding:5px 8px;font-size:11px;color:#f0f6fc;pointer-events:none;z-index:999;line-height:1.5;';
+  container.style.position = 'relative';
+  container.appendChild(tooltip);
+
+  if (S.chartType === 'candle') {
+    var series = _priceChart.addCandlestickSeries({
+      upColor: '#3fb950', downColor: '#f85149',
+      borderUpColor: '#3fb950', borderDownColor: '#f85149',
+      wickUpColor: '#3fb950', wickDownColor: '#f85149'
+    });
+    series.setData(points.map(function(p) {
+      return { time: p.date, open: p.open, high: p.high, low: p.low, close: p.price };
+    }));
+    _priceChart.subscribeCrosshairMove(function(param) {
+      if (!param || !param.time || !param.seriesData) { tooltip.style.display = 'none'; return; }
+      var d = param.seriesData.get(series);
+      if (!d) { tooltip.style.display = 'none'; return; }
+      var chg = d.open ? ((d.close - d.open) / d.open * 100) : 0;
+      var chgColor = chg >= 0 ? '#3fb950' : '#f85149';
+      tooltip.innerHTML =
+        '<span style="color:#8b949e">' + (typeof d.time === 'string' ? d.time : new Date(d.time * 1000).toLocaleDateString()) + '</span><br>' +
+        'פתיחה: $' + fmtPrice(d.open) + '<br>גבוה: $' + fmtPrice(d.high) + '<br>נמוך: $' + fmtPrice(d.low) + '<br>סגירה: $' + fmtPrice(d.close) + '<br>' +
+        '<span style="color:' + chgColor + ';font-weight:700">שינוי: ' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%</span>';
+      tooltip.style.display = 'block';
+      var x = param.point ? param.point.x : 0;
+      tooltip.style.left = (x < container.clientWidth / 2 ? x + 12 : x - 145) + 'px';
+      tooltip.style.top = '10px';
+    });
+  } else {
+    var series = _priceChart.addLineSeries({
+      color: isUp ? '#3fb950' : '#f85149', lineWidth: 2, priceLineVisible: false, lastValueVisible: true
+    });
+    series.setData(points.map(function(p) { return { time: p.date, value: p.price }; }));
+  }
+
+  _priceChart.timeScale().fitContent();
+  window.addEventListener('resize', function() {
+    if (_priceChart) _priceChart.applyOptions({ width: container.clientWidth });
+  });
 }
 
 // --- Analyst targets ---
