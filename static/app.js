@@ -759,10 +759,15 @@ function drawChart(points) {
       borderColor: chartBdr,
       timeVisible: true,
       secondsVisible: false,
-      tickMarkFormatter: (S.chartRange === '7d' || S.chartRange === '1mo' || S.chartRange === '3mo') ? function(time) {
+      tickMarkFormatter: (S.chartRange === '7d' || S.chartRange === '1mo' || S.chartRange === '3mo') ? function(time, tickType) {
         if (typeof time !== 'string') return '';
         var p = time.split('-');
-        return parseInt(p[2]) + '.' + parseInt(p[1]);
+        var day = parseInt(p[2]), mon = parseInt(p[1]);
+        if (S.chartRange === '3mo' && tickType === 1) {
+          var heMonths = ['','ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
+          return heMonths[mon] || (day + '.' + mon);
+        }
+        return day + '.' + mon;
       } : undefined
     },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
