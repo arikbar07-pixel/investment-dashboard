@@ -173,21 +173,29 @@ def portfolio_history():
     if not all_investments:
         return jsonify([])
 
-    # Fetch current prices for all tickers
+    # Fetch current prices via Finnhub (same source as dashboard cards)
     tickers = list(set(inv['ticker'] for inv in all_investments if inv.get('purchase_price')))
     current_prices = {}
     for ticker in tickers:
         try:
-            h = yf.Ticker(ticker).history(period='2d', interval='1d')
-            if not h.empty:
-                current_prices[ticker] = round(float(h['Close'].iloc[-1]), 4)
+            cached_price = _cache.get('price:' + ticker)
+            if cached_price and cached_price['data'] and cached_price['data'].get('price'):
+                current_prices[ticker] = cached_price['data']['price']
+            else:
+                data = fh_get('quote', {'symbol': fh_symbol(ticker)})
+                if data.get('c'):
+                    current_prices[ticker] = round(float(data['c']), 4)
         except Exception:
             pass
 
-    # Fetch current USD/ILS rate
+    # Fetch current USD/ILS rate via open.er-api (same as /api/rate/usdils)
     try:
-        rate_h = yf.Ticker('ILS=X').history(period='2d', interval='1d')
-        current_rate = round(float(rate_h['Close'].iloc[-1]), 4) if not rate_h.empty else 3.65
+        cached_rate = _cache.get('rate:usdils')
+        if cached_rate and cached_rate['data']:
+            current_rate = cached_rate['data']['rate']
+        else:
+            r = requests.get('https://open.er-api.com/v6/latest/USD', timeout=10)
+            current_rate = round(float(r.json()['rates']['ILS']), 4)
     except Exception:
         current_rate = 3.65
 

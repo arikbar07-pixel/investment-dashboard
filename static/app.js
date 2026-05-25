@@ -594,11 +594,13 @@ async function renderPortfolioChart() {
         },
         scales: {
           x: {
-            grid: { color: 'rgba(48,54,61,0.35)', drawBorder: false },
+            grid: { display: false },
+            border: { display: true, color: 'rgba(48,54,61,0.6)' },
             ticks: { color: '#8d90a1', font: { size: 11 } }
           },
           y: {
-            grid: { color: 'rgba(48,54,61,0.35)', drawBorder: false },
+            grid: { display: false },
+            border: { display: true, color: 'rgba(48,54,61,0.6)' },
             ticks: {
               color: '#8d90a1',
               font: { size: 11 },
