@@ -764,8 +764,8 @@ function drawChart(points) {
         var p = time.split('-');
         var day = parseInt(p[2]), mon = parseInt(p[1]);
         if (S.chartRange === '3mo' && tickType === 1) {
-          var heMonths = ['','ינו׳','פבר׳','מרץ','אפר׳','מאי','יוני','יולי','אוג׳','ספט׳','אוק׳','נוב׳','דצמ׳'];
-          return heMonths[mon] || (day + '.' + mon);
+          var enMonths = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          return enMonths[mon] || (day + '.' + mon);
         }
         return day + '.' + mon;
       } : undefined
