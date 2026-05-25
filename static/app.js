@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function applyTheme(theme) {
   document.body.classList.toggle('light', theme === 'light');
   var btn = document.getElementById('theme-btn');
-  if (btn) btn.textContent = theme === 'light' ? '●' : '○';
+  if (btn) btn.textContent = theme === 'light' ? '○' : '●';
 }
 
 function toggleTheme() {
@@ -183,7 +183,7 @@ function renderSummaryCards() {
 
 // --- Tabs ---
 
-var TAB_ICONS  = { 'BTC': '₿ ', 'ETH': '⟠ ', 'סיכום': '📊 ' };
+var TAB_ICONS  = { 'BTC': '₿ ', 'ETH': '⟠ ' };
 var TAB_ORDER  = ['מניות', 'VOO', 'QQQ', 'BTC', 'ETH'];
 
 var MOB_ICONS = {
@@ -214,7 +214,7 @@ function renderTabs() {
       icon + cat + delBtn + '</button>';
   });
 
-  html += '<button class="tab' + (S.activeTab === TAB_SUMMARY ? ' active' : '') + '" data-tab="סיכום" onclick="switchTab(\'סיכום\')">📊 סיכום</button>';
+  html += '<button class="tab' + (S.activeTab === TAB_SUMMARY ? ' active' : '') + '" data-tab="סיכום" onclick="switchTab(\'סיכום\')">סיכום <span class="material-symbols-outlined" style="font-size:14px;vertical-align:-2px;opacity:.8">bar_chart</span></button>';
   html += '<button class="tab" onclick="promptAddCategory()" title="הוסף קטגוריה" style="font-size:18px;padding:6px 14px">＋</button>';
   bar.innerHTML = html;
 
