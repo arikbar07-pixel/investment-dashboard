@@ -763,26 +763,22 @@ tr.tr-group-label td {
   overflow-x: auto;
   gap: 4px;
   padding: 0 8px;
-  direction: ltr;
 }
 .mob-btn.mob-active { color: var(--primary); }
 .mob-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  padding: 6px 10px;
+  padding: 6px 14px;
   border-radius: 8px;
   transition: color .15s;
   font-family: inherit;
-  text-transform: uppercase;
-  letter-spacing: .3px;
+  white-space: nowrap;
 }
 .mob-btn:hover { color: var(--primary); }
 .mob-fab {
@@ -796,7 +792,9 @@ tr.tr-group-label td {
   border-radius: 50%;
   color: #fff;
   cursor: pointer;
-  margin-top: -20px;
+  font-size: 22px;
+  font-weight: 400;
+  flex-shrink: 0;
   box-shadow: 0 6px 20px rgba(46,98,246,.45);
   transition: transform .15s, box-shadow .15s;
 }

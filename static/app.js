@@ -224,16 +224,12 @@ function renderMobileNav() {
   var cats = TAB_ORDER.filter(function(t) { return all.indexOf(t) !== -1; })
     .concat(all.filter(function(t) { return TAB_ORDER.indexOf(t) === -1; }))
     .concat(['סיכום']);
-  var html = '';
+  var html = '<button class="mob-fab" onclick="toggleForm()">+</button>';
   cats.forEach(function(tab) {
-    var icon   = MOB_ICONS[tab] || 'bar_chart';
+    var label  = (TAB_ICONS[tab] || '') + tab;
     var active = S.activeTab === tab ? ' mob-active' : '';
-    html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' +
-      '<span class="material-symbols-outlined">' + icon + '</span>' +
-      '<span>' + tab + '</span></button>';
+    html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' + label + '</button>';
   });
-  html += '<button class="mob-fab" onclick="toggleForm()">' +
-    '<span class="material-symbols-outlined">add</span></button>';
   nav.innerHTML = html;
 }
 
