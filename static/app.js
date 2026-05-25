@@ -755,7 +755,16 @@ function drawChart(points) {
       horzLines: { color: chartGrd }
     },
     rightPriceScale: { borderColor: chartBdr },
-    timeScale: { borderColor: chartBdr, timeVisible: true, secondsVisible: false },
+    timeScale: {
+      borderColor: chartBdr,
+      timeVisible: true,
+      secondsVisible: false,
+      tickMarkFormatter: (S.chartRange === '7d' || S.chartRange === '1mo') ? function(time) {
+        if (typeof time !== 'string') return '';
+        var p = time.split('-');
+        return parseInt(p[2]) + '.' + parseInt(p[1]);
+      } : undefined
+    },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
   });
 
