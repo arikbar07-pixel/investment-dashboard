@@ -36,6 +36,7 @@
 
     <div class="nav-end">
       <div class="clock" id="clock"></div>
+      <span class="nav-rate" id="nav-rate">—</span>
       <button class="btn-theme" id="theme-btn" onclick="toggleTheme()" title="החלף מצב תצוגה">●</button>
       <button class="btn-add-nav" onclick="toggleForm()">
         <span class="material-symbols-outlined" style="font-size:17px;vertical-align:-3px;margin-left:4px">add</span>
@@ -61,11 +62,11 @@
 
     <!-- Summary cards -->
     <div class="summary-grid">
-      <div class="glass-card stat-item anim-in" style="animation-delay:.05s">
+      <div class="glass-card stat-item anim-in stat-full" style="animation-delay:.05s">
         <span class="stat-label">סה"כ הושקע</span>
         <span class="stat-value" id="stat-invested">—</span>
       </div>
-      <div class="glass-card stat-item anim-in" style="animation-delay:.10s">
+      <div class="glass-card stat-item anim-in stat-full" style="animation-delay:.10s">
         <span class="stat-label">שווי נוכחי</span>
         <span class="stat-value val-primary" id="stat-current">—</span>
       </div>
@@ -73,13 +74,9 @@
         <span class="stat-label">רווח / הפסד</span>
         <span class="stat-value" id="stat-pnl">—</span>
       </div>
-      <div class="glass-card stat-item anim-in" style="animation-delay:.20s">
+      <div class="glass-card stat-item anim-in stat-full" style="animation-delay:.20s">
         <span class="stat-label">תשואה כוללת</span>
         <span class="stat-value" id="stat-return">—</span>
-      </div>
-      <div class="glass-card stat-item anim-in" style="animation-delay:.25s">
-        <span class="stat-label">$/₪</span>
-        <span class="stat-value" id="stat-rate">—</span>
       </div>
     </div>
 

@@ -190,6 +190,14 @@ body {
   font-size: 11px;
   color: var(--text-muted);
 }
+.nav-rate {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  border-right: 1px solid var(--border);
+  padding-right: 12px;
+  margin-right: 4px;
+}
 
 .btn-add-nav {
   display: flex;
