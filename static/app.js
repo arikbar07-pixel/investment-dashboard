@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function applyTheme(theme) {
   document.body.classList.toggle('light', theme === 'light');
   var btn = document.getElementById('theme-btn');
-  if (btn) btn.textContent = theme === 'light' ? '○' : '●';
+  if (btn) btn.textContent = '●';
 }
 
 function toggleTheme() {
