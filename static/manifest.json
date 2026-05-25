@@ -1,6 +1,6 @@
 {
-  "name": "EquityFlow",
-  "short_name": "EquityFlow",
+  "name": "ההשקעות שלי",
+  "short_name": "ההשקעות שלי",
   "description": "מעקב השקעות אישי",
   "start_url": "/",
   "display": "standalone",
