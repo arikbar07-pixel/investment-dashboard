@@ -10,7 +10,7 @@
   --red:         #ffb4ab;
   --red-bg:      rgba(255,180,171,.12);
 
-  /* Palette */
+  /* Palette — dark mode (default) */
   --bg:          #111317;
   --surface:     #1a1c20;
   --surface2:    #21262d;
@@ -30,6 +30,50 @@
   --nav-h:       60px;
   --sidebar-w:   220px;
 }
+
+/* ── Light mode ─────────────────────────────────────────────────────────── */
+body.light {
+  --bg:          #f0f2f7;
+  --surface:     #ffffff;
+  --surface2:    #e8eaf0;
+  --surface3:    #dde0ea;
+  --border:      rgba(0,0,0,.09);
+  --border-top:  rgba(0,0,0,.14);
+  --text:        #2c2e3e;
+  --text-muted:  #6b6f85;
+  --text-bright: #111220;
+  --primary:     #2e62f6;
+  --primary-dim: rgba(46,98,246,.08);
+  --green:       #1a9e6e;
+  --red:         #c0392b;
+}
+body.light .ambient-bg { opacity: 0.3; }
+body.light .glass-card  { background: var(--surface); border-color: var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+body.light .top-nav     { background: rgba(255,255,255,.85); border-color: var(--border); }
+body.light .sidebar     { background: rgba(255,255,255,.9);  border-color: var(--border); }
+body.light .tab         { color: var(--text-muted); }
+body.light .tab.active  { background: var(--primary-dim); color: var(--primary); }
+body.light table        { color: var(--text); }
+body.light thead th     { border-color: var(--border); color: var(--text-muted); }
+body.light tbody tr     { border-color: var(--border); }
+body.light .mobile-nav  { background: rgba(255,255,255,.92); border-color: var(--border); }
+body.light .mob-btn     { color: var(--text-muted); }
+body.light .form-panel  { background: var(--surface); }
+body.light input, body.light select { background: var(--surface2); color: var(--text); border-color: var(--border); }
+
+/* Theme toggle button */
+.btn-theme {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: color .2s, border-color .2s;
+}
+.btn-theme:hover { color: var(--text-bright); border-color: var(--primary); }
 
 /* ── Reset ──────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

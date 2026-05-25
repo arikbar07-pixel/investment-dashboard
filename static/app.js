@@ -52,7 +52,20 @@ document.addEventListener('DOMContentLoaded', function() {
   startClock();
   setupAutocomplete();
   init();
+  if (localStorage.getItem('theme') === 'light') applyTheme('light');
 });
+
+function applyTheme(theme) {
+  document.body.classList.toggle('light', theme === 'light');
+  var btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+}
+
+function toggleTheme() {
+  var next = document.body.classList.contains('light') ? 'dark' : 'light';
+  localStorage.setItem('theme', next);
+  applyTheme(next);
+}
 
 async function init() {
   setStatus('loading');
