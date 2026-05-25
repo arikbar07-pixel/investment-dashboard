@@ -173,6 +173,15 @@ function renderSummaryCards() {
 var TAB_ICONS  = { 'BTC': '₿ ', 'ETH': '⟠ ', 'סיכום': '📊 ' };
 var TAB_ORDER  = ['מניות', 'VOO', 'QQQ', 'BTC', 'ETH'];
 
+var MOB_ICONS = {
+  'מניות': 'show_chart',
+  'BTC':   'currency_bitcoin',
+  'ETH':   'currency_bitcoin',
+  'VOO':   'pie_chart',
+  'QQQ':   'pie_chart',
+  'סיכום': 'dashboard'
+};
+
 function renderTabs() {
   var bar = document.getElementById('tabs-bar');
   if (!bar) return;
@@ -196,6 +205,8 @@ function renderTabs() {
   html += '<button class="tab" onclick="promptAddCategory()" title="הוסף קטגוריה" style="font-size:18px;padding:6px 14px">＋</button>';
   bar.innerHTML = html;
 
+  renderMobileNav();
+
   // Update form category select
   var sel = document.getElementById('f-cat');
   if (sel) {
@@ -204,6 +215,25 @@ function renderTabs() {
       return '<option value="' + c + '"' + (c === prev ? ' selected' : '') + '>' + c + '</option>';
     }).join('');
   }
+}
+
+function renderMobileNav() {
+  var nav = document.getElementById('mobile-nav');
+  if (!nav) return;
+  var all  = Object.keys(S.portfolio).filter(function(k) { return k[0] !== '_'; });
+  var cats = TAB_ORDER.filter(function(t) { return all.indexOf(t) !== -1; })
+    .concat(all.filter(function(t) { return TAB_ORDER.indexOf(t) === -1; }))
+    .concat(['סיכום']);
+  var html = '<button class="mob-fab" onclick="toggleForm()">' +
+    '<span class="material-symbols-outlined">add</span></button>';
+  cats.forEach(function(tab) {
+    var icon   = MOB_ICONS[tab] || 'bar_chart';
+    var active = S.activeTab === tab ? ' mob-active' : '';
+    html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' +
+      '<span class="material-symbols-outlined">' + icon + '</span>' +
+      '<span>' + tab + '</span></button>';
+  });
+  nav.innerHTML = html;
 }
 
 function promptAddCategory() {

@@ -759,9 +759,12 @@ tr.tr-group-label td {
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--border);
   align-items: center;
-  justify-content: space-around;
+  justify-content: flex-start;
+  overflow-x: auto;
+  gap: 4px;
   padding: 0 8px;
 }
+.mob-btn.mob-active { color: var(--primary); }
 .mob-btn {
   display: flex;
   flex-direction: column;

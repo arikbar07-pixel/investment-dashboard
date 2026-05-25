@@ -169,27 +169,7 @@
   <div id="form-overlay" onclick="toggleForm()"></div>
 
   <!-- ═══ MOBILE BOTTOM NAV ════════════════════════════════════════════════ -->
-  <nav class="mobile-nav">
-    <button class="mob-btn" onclick="switchTab('מניות')">
-      <span class="material-symbols-outlined">show_chart</span>
-      <span>מניות</span>
-    </button>
-    <button class="mob-btn" onclick="switchTab('סיכום')">
-      <span class="material-symbols-outlined">dashboard</span>
-      <span>סיכום</span>
-    </button>
-    <button class="mob-fab" onclick="toggleForm()">
-      <span class="material-symbols-outlined">add</span>
-    </button>
-    <button class="mob-btn" onclick="switchTab('BTC')">
-      <span class="material-symbols-outlined">currency_bitcoin</span>
-      <span>קריפטו</span>
-    </button>
-    <button class="mob-btn" onclick="switchTab('VOO')">
-      <span class="material-symbols-outlined">pie_chart</span>
-      <span>ETF</span>
-    </button>
-  </nav>
+  <nav class="mobile-nav" id="mobile-nav"></nav>
 
   <script src="/static/app.js"></script>
 </body>
