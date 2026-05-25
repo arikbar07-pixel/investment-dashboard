@@ -737,17 +737,23 @@ function drawChart(points) {
   var first = points[0].price, last = points[points.length - 1].price;
   var isUp  = last >= first;
 
-  var chartW = container.clientWidth || container.parentElement.clientWidth || 700;
+  var isLight  = document.body.classList.contains('light');
+  var chartBg  = isLight ? '#ffffff' : '#0d1117';
+  var chartTxt = isLight ? '#6b6f85' : '#8b949e';
+  var chartGrd = isLight ? 'rgba(0,0,0,0.07)' : 'rgba(48,54,61,0.4)';
+  var chartBdr = isLight ? 'rgba(0,0,0,0.12)' : '#30363d';
+  var chartW   = container.clientWidth || container.parentElement.clientWidth || 700;
+
   _priceChart = LightweightCharts.createChart(container, {
     width:  chartW,
     height: 280,
-    layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
+    layout: { background: { color: chartBg }, textColor: chartTxt },
     grid: {
-      vertLines: { color: 'rgba(48,54,61,0.4)' },
-      horzLines: { color: 'rgba(48,54,61,0.4)' }
+      vertLines: { color: chartGrd },
+      horzLines: { color: chartGrd }
     },
-    rightPriceScale: { borderColor: '#30363d' },
-    timeScale: { borderColor: '#30363d', timeVisible: true, secondsVisible: false },
+    rightPriceScale: { borderColor: chartBdr },
+    timeScale: { borderColor: chartBdr, timeVisible: true, secondsVisible: false },
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal }
   });
 

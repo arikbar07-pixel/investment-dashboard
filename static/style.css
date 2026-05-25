@@ -47,18 +47,25 @@ body.light {
   --green:       #1a9e6e;
   --red:         #c0392b;
 }
-body.light .ambient-bg { opacity: 0.3; }
+body.light .ambient-bg  { opacity: 0.2; }
 body.light .glass-card  { background: var(--surface); border-color: var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.07); }
-body.light .top-nav     { background: rgba(255,255,255,.85); border-color: var(--border); }
-body.light .sidebar     { background: rgba(255,255,255,.9);  border-color: var(--border); }
+body.light .top-nav     { background: rgba(255,255,255,.92); border-color: var(--border); }
+body.light .sidebar     { background: rgba(245,246,250,.97); border-color: var(--border); }
 body.light .tab         { color: var(--text-muted); }
 body.light .tab.active  { background: var(--primary-dim); color: var(--primary); }
+body.light .sidebar-nav .tab:hover { background: rgba(0,0,0,.04); }
 body.light table        { color: var(--text); }
-body.light thead th     { border-color: var(--border); color: var(--text-muted); }
-body.light tbody tr     { border-color: var(--border); }
-body.light .mobile-nav  { background: rgba(255,255,255,.92); border-color: var(--border); }
+body.light thead th     { background: rgba(0,0,0,.03); border-color: var(--border) !important; color: var(--text-muted); }
+body.light tbody tr     { border-color: var(--border) !important; }
+body.light tbody tr:hover { background: rgba(0,0,0,.03); }
+body.light tr.tr-total  { background: rgba(0,0,0,.03) !important; border-color: var(--border) !important; }
+body.light .mobile-nav  { background: rgba(255,255,255,.95); border-color: var(--border); }
 body.light .mob-btn     { color: var(--text-muted); }
-body.light .form-panel  { background: var(--surface); }
+body.light .form-panel  { background: var(--surface); border-color: var(--border); }
+body.light .range-btn   { background: rgba(0,0,0,.04); }
+body.light .range-btn:hover, body.light .range-btn.active { background: var(--primary-dim); }
+body.light .chart-panel { background: var(--surface) !important; }
+body.light .chart-top   { background: var(--surface); }
 body.light input, body.light select { background: var(--surface2); color: var(--text); border-color: var(--border); }
 
 /* Theme toggle button */
