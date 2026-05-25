@@ -10,6 +10,13 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#2e62f6">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EquityFlow">
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
 </head>
 <body>
 
@@ -172,5 +179,10 @@
   <nav class="mobile-nav" id="mobile-nav"></nav>
 
   <script src="/static/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/static/sw.js');
+    }
+  </script>
 </body>
 </html>

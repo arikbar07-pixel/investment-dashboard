@@ -3,7 +3,7 @@ import os
 import time
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from flask import Flask, jsonify, render_template, request, session, redirect, url_for
+from flask import Flask, jsonify, render_template, request, session, redirect, url_for, send_from_directory
 import requests
 import yfinance as yf
 
@@ -21,6 +21,11 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated
+
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json')
 
 
 @app.route('/login', methods=['GET', 'POST'])
