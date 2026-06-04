@@ -59,6 +59,11 @@ function applyTheme(theme) {
   document.body.classList.toggle('light', theme === 'light');
   var btn = document.getElementById('theme-btn');
   if (btn) btn.textContent = '●';
+  var panel = document.getElementById('chart-panel');
+  if (panel && panel.style.display !== 'none' && S.chartTicker) {
+    var cached = _chartCache[S.chartTicker + ':' + S.chartRange];
+    if (cached) requestAnimationFrame(function() { drawChart(cached); });
+  }
 }
 
 function toggleTheme() {
