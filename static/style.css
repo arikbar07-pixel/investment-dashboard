@@ -722,6 +722,9 @@ tr.tr-total td { font-weight: 700; color: var(--text-bright); }
 .chart-body { padding: 0 18px 8px; }
 #tv-chart { border-radius: var(--radius-sm); overflow: hidden; }
 
+.news-headline { font-size: 13px; font-weight: 600; color: var(--text-bright); flex: 1; line-height: 1.4; }
+.news-divider  { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+
 .news-section-label {
   font-size: 11px;
   font-weight: 700;

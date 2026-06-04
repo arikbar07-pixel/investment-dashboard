@@ -652,13 +652,10 @@ function loadNews(ticker) {
         list.innerHTML = '<div style="color:#8b949e;font-size:12px;padding:8px 0">לא נמצאו חדשות רלוונטיות</div>';
         return;
       }
-      var isLight = document.body.classList.contains('light');
-      var headlineColor = isLight ? '#2d3142' : '#f0f6fc';
-      var dividerColor  = isLight ? 'rgba(0,0,0,0.08)' : '#30363d';
       list.innerHTML = items.map(function(n) {
-        return '<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid ' + dividerColor + '">' +
+        return '<div class="news-divider">' +
           '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px">' +
-          '<span style="font-size:13px;font-weight:600;color:' + headlineColor + ';flex:1;line-height:1.4">' + (n.headline || '') + '</span>' +
+          '<span class="news-headline">' + (n.headline || '') + '</span>' +
           '<span style="font-size:11px;color:#8b949e;white-space:nowrap">' + (n.date || '') + '</span>' +
           '</div>' +
           (n.summary ? '<div style="font-size:12px;color:#8b949e;line-height:1.6">' + n.summary + '</div>' : '') +
