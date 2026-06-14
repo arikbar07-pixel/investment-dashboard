@@ -141,6 +141,34 @@ def is_crypto(ticker):
     return '-USD' in ticker or ticker.startswith('BINANCE:')
 
 
+COINGECKO_IDS = {
+    'BTC-USD': 'bitcoin',
+    'ETH-USD': 'ethereum'
+}
+
+
+def cg_price(ticker):
+    cg_id = COINGECKO_IDS.get(ticker)
+    if not cg_id:
+        return None
+    r = requests.get(
+        'https://api.coingecko.com/api/v3/simple/price',
+        params={'ids': cg_id, 'vs_currencies': 'usd', 'include_24hr_change': 'true'},
+        headers={'Accept': 'application/json'},
+        timeout=10
+    )
+    r.raise_for_status()
+    data = r.json().get(cg_id, {})
+    price = data.get('usd')
+    if not price:
+        return None
+    return {
+        'price':      round(float(price), 6),
+        'change_pct': round(float(data.get('usd_24h_change', 0)), 3),
+        'prev_close': None
+    }
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @app.route('/')
@@ -181,6 +209,10 @@ def portfolio_history():
             cached_price = _cache.get('price:' + ticker)
             if cached_price and cached_price['data'] and cached_price['data'].get('price'):
                 current_prices[ticker] = cached_price['data']['price']
+            elif is_crypto(ticker):
+                data = cg_price(ticker)
+                if data and data.get('price'):
+                    current_prices[ticker] = data['price']
             else:
                 data = fh_get('quote', {'symbol': fh_symbol(ticker)})
                 if data.get('c'):
@@ -247,6 +279,8 @@ def save_portfolio():
 @app.route('/api/price/<path:ticker>')
 def get_price(ticker):
     def fetch():
+        if is_crypto(ticker):
+            return cg_price(ticker)
         symbol = fh_symbol(ticker)
         data   = fh_get('quote', {'symbol': symbol})
         price  = data.get('c')
