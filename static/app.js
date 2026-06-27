@@ -100,6 +100,13 @@ async function refreshAll() {
   await refreshPrices();
   renderActiveTab();
   renderSummaryCards();
+  if (S.chartTicker) {
+    var pd = S.prices[S.chartTicker];
+    if (pd && pd.price) {
+      var priceEl = document.getElementById('chart-price');
+      if (priceEl) priceEl.textContent = '$' + fmtPrice(pd.price);
+    }
+  }
 }
 
 async function refreshPrices() {
@@ -728,7 +735,14 @@ function loadChart(range) {
     .then(function(points) {
       if (!points || !points.length) return;
       _chartCache[key] = points;
-      if (S.chartTicker === ticker && S.chartRange === range) drawChart(points);
+      if (S.chartTicker === ticker && S.chartRange === range) {
+        drawChart(points);
+        var last = points[points.length - 1];
+        if (last && last.price) {
+          var priceEl = document.getElementById('chart-price');
+          if (priceEl) priceEl.textContent = '$' + fmtPrice(last.price);
+        }
+      }
     })
     .catch(function(e) { console.error('[chart]', e); });
 }
