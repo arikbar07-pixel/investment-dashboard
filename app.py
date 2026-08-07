@@ -141,30 +141,30 @@ def is_crypto(ticker):
     return '-USD' in ticker or ticker.startswith('BINANCE:')
 
 
-COINGECKO_IDS = {
-    'BTC-USD': 'bitcoin',
-    'ETH-USD': 'ethereum'
+BINANCE_SYMBOLS = {
+    'BTC-USD': 'BTCUSDT',
+    'ETH-USD': 'ETHUSDT'
 }
 
 
 def cg_price(ticker):
-    cg_id = COINGECKO_IDS.get(ticker)
-    if not cg_id:
+    symbol = BINANCE_SYMBOLS.get(ticker)
+    if not symbol:
         return None
     r = requests.get(
-        'https://api.coingecko.com/api/v3/simple/price',
-        params={'ids': cg_id, 'vs_currencies': 'usd', 'include_24hr_change': 'true'},
-        headers={'Accept': 'application/json'},
+        'https://api.binance.com/api/v3/ticker/24hr',
+        params={'symbol': symbol},
         timeout=10
     )
     r.raise_for_status()
-    data = r.json().get(cg_id, {})
-    price = data.get('usd')
+    data = r.json()
+    price = data.get('lastPrice')
+    pct   = data.get('priceChangePercent', 0)
     if not price:
         return None
     return {
         'price':      round(float(price), 6),
-        'change_pct': round(float(data.get('usd_24h_change', 0)), 3),
+        'change_pct': round(float(pct), 3),
         'prev_close': None
     }
 
