@@ -141,32 +141,58 @@ def is_crypto(ticker):
     return '-USD' in ticker or ticker.startswith('BINANCE:')
 
 
-BINANCE_SYMBOLS = {
-    'BTC-USD': 'BTCUSDT',
-    'ETH-USD': 'ETHUSDT'
-}
-
-
 def cg_price(ticker):
-    symbol = BINANCE_SYMBOLS.get(ticker)
-    if not symbol:
-        return None
-    r = requests.get(
-        'https://api.binance.com/api/v3/ticker/24hr',
-        params={'symbol': symbol},
-        timeout=10
-    )
-    r.raise_for_status()
-    data = r.json()
-    price = data.get('lastPrice')
-    pct   = data.get('priceChangePercent', 0)
-    if not price:
-        return None
-    return {
-        'price':      round(float(price), 6),
-        'change_pct': round(float(pct), 3),
-        'prev_close': None
-    }
+    # 1. Try Finnhub (BINANCE:BTCUSDT mapping)
+    try:
+        data  = fh_get('quote', {'symbol': fh_symbol(ticker)})
+        price = data.get('c')
+        if price and float(price) > 0:
+            return {
+                'price':      round(float(price), 6),
+                'change_pct': round(float(data.get('dp', 0)), 3),
+                'prev_close': round(float(data['pc']), 6) if data.get('pc') else None
+            }
+    except Exception:
+        pass
+
+    # 2. Try Kraken (no geo-restrictions)
+    kraken_pairs = {'BTC-USD': 'XBTUSD', 'ETH-USD': 'ETHUSD'}
+    pair = kraken_pairs.get(ticker)
+    if pair:
+        try:
+            r = requests.get(
+                'https://api.kraken.com/0/public/Ticker',
+                params={'pair': pair}, timeout=10
+            )
+            result = r.json().get('result', {})
+            row    = next(iter(result.values()), {})
+            price  = row.get('c', [None])[0]
+            open_  = row.get('o')
+            if price and float(price) > 0:
+                pct = (float(price) - float(open_)) / float(open_) * 100 if open_ else 0
+                return {
+                    'price':      round(float(price), 6),
+                    'change_pct': round(pct, 3),
+                    'prev_close': None
+                }
+        except Exception:
+            pass
+
+    # 3. Fallback: yfinance
+    try:
+        h = yf.Ticker(ticker).history(period='2d', interval='5m')
+        if not h.empty:
+            price = float(h['Close'].iloc[-1])
+            h2    = yf.Ticker(ticker).history(period='5d', interval='1d')
+            pct   = 0
+            if len(h2) >= 2:
+                prev = float(h2['Close'].iloc[-2])
+                pct  = (price - prev) / prev * 100
+            return {'price': round(price, 6), 'change_pct': round(pct, 3), 'prev_close': None}
+    except Exception:
+        pass
+
+    return None
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
