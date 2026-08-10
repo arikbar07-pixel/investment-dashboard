@@ -324,7 +324,7 @@ function renderTable(investments, isStocks) {
   }
 
   var invUsd = 0, invIls = 0, curIls = 0;
-  var colCount = 10 + (isStocks ? 1 : 0);
+  var colCount = 9;
 
   function buildRow(inv) {
     var pd = S.prices[inv.ticker];
@@ -339,10 +339,6 @@ function renderTable(investments, isStocks) {
     invIls += rowIls;
     if (cur) curIls += cur;
 
-    var targetCell = isStocks
-      ? '<td class="td-price">' + (S.targets[inv.ticker] != null ? '$' + fmt2(S.targets[inv.ticker]) : '...') + '</td>'
-      : '';
-
     var catEsc = S.activeTab.replace(/'/g, "\\'");
     var idEsc  = inv.id.replace(/'/g, "\\'");
 
@@ -356,7 +352,6 @@ function renderTable(investments, isStocks) {
       '<td class="td-price" id="pr-' + inv.id + '">' + (p ? '$' + fmtPrice(p) : '...') + '</td>' +
       '<td class="td-pct ' + pctClass + '" id="pct-' + inv.id + '">' + pctStr + '</td>' +
       '<td class="td-value" id="val-' + inv.id + '">' + (cur ? '₪' + fmt2(cur) : '...') + '</td>' +
-      targetCell +
       '<td><button class="btn-del" onclick="delRow(event,\'' + catEsc + '\',\'' + idEsc + '\')">🗑</button></td>' +
       '</tr>';
   }
@@ -365,8 +360,6 @@ function renderTable(investments, isStocks) {
 
   var totalPct   = invIls ? (curIls - invIls) / invIls * 100 : 0;
   var totalClass = totalPct >= 0 ? 'pos' : 'neg';
-  var targetHeader = isStocks ? '<th>יעד אנליסטים ($)</th>' : '';
-  var targetEmpty  = isStocks ? '<td>&mdash;</td>' : '';
 
   return '<div class="table-wrap"><table>' +
     '<thead><tr>' +
@@ -375,7 +368,6 @@ function renderTable(investments, isStocks) {
     '<th>תאריך קנייה</th><th>מחיר קנייה</th>' +
     '<th>מחיר עכשווי ⟳</th><th>%</th>' +
     '<th>שווי עכשווי (₪)</th>' +
-    targetHeader +
     '<th></th>' +
     '</tr></thead>' +
     '<tbody>' + rows +
@@ -386,7 +378,6 @@ function renderTable(investments, isStocks) {
     '<td></td><td></td><td></td>' +
     '<td class="td-pct ' + totalClass + '">' + (totalPct >= 0 ? '+' : '') + totalPct.toFixed(3) + '%</td>' +
     '<td class="td-value">₪' + fmt2(curIls) + '</td>' +
-    targetEmpty +
     '<td></td>' +
     '</tr>' +
     '</tbody></table></div>';
