@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>כניסה — ההשקעות שלי</title>
+  <title>הרשמה — ההשקעות שלי</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
@@ -43,20 +43,12 @@
       font-family: inherit;
     }
     input[type="text"]:focus, input[type="password"]:focus { border-color: #4493f8; }
-    .remember {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 4px;
-      cursor: pointer;
-      font-size: 13px;
-      color: #8b949e;
-    }
-    .remember input[type="checkbox"] { accent-color: #4493f8; width: 15px; height: 15px; cursor: pointer; }
+    input.invalid { border-color: #f85149; }
+    .hint { font-size: 11px; color: #8b949e; margin-top: 4px; }
     .btn {
       margin-top: 20px;
       width: 100%;
-      background: #4493f8;
+      background: #3fb950;
       color: #fff;
       border: none;
       padding: 11px;
@@ -77,27 +69,40 @@
 <body>
   <div class="card">
     <div class="logo">📈</div>
-    <h1>ההשקעות שלי</h1>
-    <p class="sub">כנס לחשבון שלך</p>
-    <form method="post">
+    <h1>הרשמה</h1>
+    <p class="sub">צור חשבון חדש</p>
+    <form method="post" onsubmit="return validate()">
       <div class="field">
         <label for="username">שם משתמש</label>
-        <input type="text" id="username" name="username" autofocus autocomplete="username" placeholder="שם המשתמש שלך">
+        <input type="text" id="username" name="username" autofocus autocomplete="username" placeholder="לפחות 3 תווים">
+        <div class="hint">3 תווים לפחות, אותיות ומספרים</div>
       </div>
       <div class="field">
         <label for="password">סיסמה</label>
-        <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••">
+        <input type="password" id="password" name="password" autocomplete="new-password" placeholder="לפחות 6 תווים">
       </div>
-      <label class="remember">
-        <input type="checkbox" name="remember" value="1">
-        זכור אותי
-      </label>
-      <button type="submit" class="btn">כניסה</button>
+      <div class="field">
+        <label for="confirm">אישור סיסמה</label>
+        <input type="password" id="confirm" name="confirm" autocomplete="new-password" placeholder="הכנס סיסמה שוב">
+      </div>
+      <button type="submit" class="btn">הרשמה</button>
     </form>
     {% if error %}
       <p class="error">{{ error }}</p>
     {% endif %}
-    <p class="switch">אין לך חשבון? <a href="/register">הירשם כאן</a></p>
+    <p class="switch">כבר יש לך חשבון? <a href="/login">כנס כאן</a></p>
   </div>
+  <script>
+    function validate() {
+      var p = document.getElementById('password').value;
+      var c = document.getElementById('confirm').value;
+      if (p !== c) {
+        document.getElementById('confirm').classList.add('invalid');
+        alert('הסיסמאות אינן תואמות');
+        return false;
+      }
+      return true;
+    }
+  </script>
 </body>
 </html>

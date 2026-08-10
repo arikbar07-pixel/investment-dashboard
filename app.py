@@ -4,20 +4,20 @@ import time
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from flask import Flask, jsonify, render_template, request, session, redirect, url_for, send_from_directory
+from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 import yfinance as yf
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
-
-DASHBOARD_PASSWORD = os.environ.get('DASHBOARD_PASSWORD', 'Ab170107')
+app.permanent_session_lifetime = timedelta(days=30)
 
 
 def login_required(f):
     from functools import wraps
     @wraps(f)
     def decorated(*args, **kwargs):
-        if not session.get('logged_in'):
+        if not session.get('user_id'):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated
@@ -30,13 +30,67 @@ def manifest():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if session.get('user_id'):
+        return redirect(url_for('index'))
     error = None
     if request.method == 'POST':
-        if request.form.get('password') == DASHBOARD_PASSWORD:
-            session['logged_in'] = True
-            return redirect(url_for('index'))
-        error = 'סיסמה שגויה'
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        remember = bool(request.form.get('remember'))
+        try:
+            _ensure_tables()
+            conn = _get_db()
+            with conn.cursor() as cur:
+                cur.execute('SELECT id, password_hash FROM users WHERE username = %s', (username,))
+                user = cur.fetchone()
+            conn.close()
+            if user and check_password_hash(user[1], password):
+                session.permanent = remember
+                session['user_id']  = user[0]
+                session['username'] = username
+                return redirect(url_for('index'))
+            error = 'שם משתמש או סיסמה שגויים'
+        except Exception as e:
+            error = 'שגיאת שרת — נסה שוב'
+            print(f'[login] {e}')
     return render_template('login.html', error=error)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if session.get('user_id'):
+        return redirect(url_for('index'))
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        if len(username) < 3:
+            error = 'שם משתמש חייב להכיל לפחות 3 תווים'
+        elif len(password) < 6:
+            error = 'סיסמה חייבת להכיל לפחות 6 תווים'
+        else:
+            try:
+                _ensure_tables()
+                conn = _get_db()
+                with conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            'INSERT INTO users (username, password_hash) VALUES (%s, %s) RETURNING id',
+                            (username, generate_password_hash(password))
+                        )
+                        new_id = cur.fetchone()[0]
+                conn.close()
+                session.permanent = False
+                session['user_id']  = new_id
+                session['username'] = username
+                return redirect(url_for('index'))
+            except Exception as e:
+                if 'unique' in str(e).lower():
+                    error = 'שם המשתמש כבר תפוס — בחר אחר'
+                else:
+                    error = 'שגיאה ביצירת החשבון'
+                    print(f'[register] {e}')
+    return render_template('register.html', error=error)
 
 
 @app.route('/logout')
@@ -64,49 +118,64 @@ def _get_db():
     return conn
 
 
-def _ensure_table():
+def _ensure_tables():
     conn = _get_db()
     with conn:
         with conn.cursor() as cur:
             cur.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(50) UNIQUE NOT NULL,
+                    password_hash VARCHAR(255) NOT NULL,
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            ''')
+            cur.execute('''
                 CREATE TABLE IF NOT EXISTS portfolio (
                     id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
                     data JSONB NOT NULL,
                     updated_at TIMESTAMP DEFAULT NOW()
                 )
             ''')
+            cur.execute('ALTER TABLE portfolio ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id)')
     conn.close()
 
 
-def load_portfolio():
+def load_portfolio(user_id=None):
     if _use_db():
-        _ensure_table()
+        _ensure_tables()
         conn = _get_db()
         with conn.cursor() as cur:
-            cur.execute('SELECT data FROM portfolio ORDER BY id DESC LIMIT 1')
-            row = cur.fetchone()
+            if user_id:
+                cur.execute('SELECT data FROM portfolio WHERE user_id = %s ORDER BY id DESC LIMIT 1', (user_id,))
+                row = cur.fetchone()
+                if not row:
+                    # Claim orphaned data (pre-migration rows) for the first user to log in
+                    cur.execute('SELECT data FROM portfolio WHERE user_id IS NULL ORDER BY id DESC LIMIT 1')
+                    row = cur.fetchone()
+                    if row:
+                        cur.execute('UPDATE portfolio SET user_id = %s WHERE user_id IS NULL', (user_id,))
+                        conn.commit()
+            else:
+                cur.execute('SELECT data FROM portfolio ORDER BY id DESC LIMIT 1')
+                row = cur.fetchone()
         conn.close()
-        if row:
-            return row[0]
-        # seed from local file if db is empty
+        return row[0] if row else {}
+    else:
         if os.path.exists(PORTFOLIO_FILE):
             with open(PORTFOLIO_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            save_portfolio_data(data)
-            return data
+                return json.load(f)
         return {}
-    else:
-        with open(PORTFOLIO_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
 
 
-def save_portfolio_data(data):
+def save_portfolio_data(data, user_id=None):
     if _use_db():
-        _ensure_table()
+        _ensure_tables()
         conn = _get_db()
         with conn:
             with conn.cursor() as cur:
-                cur.execute('INSERT INTO portfolio (data) VALUES (%s)', (json.dumps(data),))
+                cur.execute('INSERT INTO portfolio (user_id, data) VALUES (%s, %s)', (user_id, json.dumps(data)))
         conn.close()
     else:
         with open(PORTFOLIO_FILE, 'w', encoding='utf-8') as f:
@@ -206,7 +275,7 @@ def index():
 @app.route('/api/portfolio/history')
 @login_required
 def portfolio_history():
-    portfolio = load_portfolio()
+    portfolio = load_portfolio(session['user_id'])
     today = datetime.now()
     current_month = today.strftime('%Y-%m')
 
@@ -272,7 +341,7 @@ def portfolio_history():
     snapshots = dict(portfolio.get('_snapshots', {}))
     snapshots[current_month] = round(live_value, 2)
     portfolio['_snapshots'] = snapshots
-    save_portfolio_data(portfolio)
+    save_portfolio_data(portfolio, session['user_id'])
 
     # Build result: past frozen snapshots + current live bar
     result = []
@@ -291,14 +360,14 @@ def portfolio_history():
 @app.route('/api/portfolio', methods=['GET'])
 @login_required
 def get_portfolio():
-    return jsonify(load_portfolio())
+    return jsonify(load_portfolio(session['user_id']))
 
 
 @app.route('/api/portfolio', methods=['POST'])
 @login_required
 def save_portfolio():
     data = request.get_json()
-    save_portfolio_data(data)
+    save_portfolio_data(data, session['user_id'])
     return jsonify({'ok': True})
 
 
