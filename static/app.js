@@ -386,12 +386,8 @@ function renderTable(investments, isStocks) {
 // --- Summary tab ---
 
 function renderSummaryTab() {
-  var displayCats = [
-    { label: TAB_STOCKS, tabs: [TAB_STOCKS], clickTab: TAB_STOCKS },
-    { label: 'VOO',      tabs: ['VOO'],       clickTab: 'VOO' },
-    { label: 'QQQ',      tabs: ['QQQ'],       clickTab: 'QQQ' },
-    { label: 'CRYPTO',   tabs: ['BTC','ETH'], clickTab: 'BTC' }
-  ];
+  var allCats = Object.keys(S.portfolio).filter(function(k) { return k[0] !== '_'; });
+  var displayCats = allCats.map(function(t) { return { label: t, tabs: [t], clickTab: t }; });
   var gInvIls = 0, gCurIls = 0;
 
   var rows = displayCats.map(function(cat) {
@@ -452,13 +448,10 @@ function renderSummaryTab() {
 function renderPieChart() {
   var canvas = document.getElementById('pie-chart');
   if (!canvas) return;
-  var pieCats = [
-    { label: TAB_STOCKS, tabs: [TAB_STOCKS] },
-    { label: 'VOO',      tabs: ['VOO'] },
-    { label: 'QQQ',      tabs: ['QQQ'] },
-    { label: 'CRYPTO',   tabs: ['BTC','ETH'] }
-  ];
-  var labels = [], values = [], colors = ['#4493f8','#3fb950','#e3b341','#f85149'];
+  var allPieCats = Object.keys(S.portfolio).filter(function(k) { return k[0] !== '_'; });
+  var pieCats = allPieCats.map(function(t) { return { label: t, tabs: [t] }; });
+  var labels = [], values = [];
+  var colors = ['#4493f8','#3fb950','#e3b341','#f85149','#a371f7','#fd7e14','#20c997','#e83e8c','#58a6ff','#79c0ff'];
 
   pieCats.forEach(function(cat, i) {
     var curIls = 0;
@@ -935,6 +928,10 @@ async function addInvestment() {
   var currency = document.getElementById('f-currency').value;
   var cat      = document.getElementById('f-cat').value;
 
+  if (!cat) {
+    showPreview('err', '✕ יש להוסיף קטגוריה תחילה (לחץ + בסרגל)');
+    return;
+  }
   if (!ticker || !date || !amount) {
     showPreview('err', '✕ יש למלא: טיקר, תאריך וסכום');
     return;
@@ -975,7 +972,14 @@ async function addInvestment() {
   if (!S.portfolio[cat]) S.portfolio[cat] = [];
   S.portfolio[cat].push(inv);
 
-  await apiFetch('/api/portfolio', { method: 'POST', json: S.portfolio });
+  try {
+    await apiFetch('/api/portfolio', { method: 'POST', json: S.portfolio });
+  } catch(e) {
+    S.portfolio[cat] = S.portfolio[cat].filter(function(i) { return i.id !== inv.id; });
+    btn.disabled = false; btn.textContent = 'הוסף';
+    showPreview('err', '✕ שגיאה בשמירה — נסה שוב');
+    return;
+  }
 
   try {
     var pd = await apiFetch('/api/price/' + encodeURIComponent(ticker));

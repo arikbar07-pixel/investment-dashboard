@@ -149,17 +149,9 @@ def load_portfolio(user_id=None):
         with conn.cursor() as cur:
             if user_id:
                 cur.execute('SELECT data FROM portfolio WHERE user_id = %s ORDER BY id DESC LIMIT 1', (user_id,))
-                row = cur.fetchone()
-                if not row:
-                    # Claim orphaned data (pre-migration rows) for the first user to log in
-                    cur.execute('SELECT data FROM portfolio WHERE user_id IS NULL ORDER BY id DESC LIMIT 1')
-                    row = cur.fetchone()
-                    if row:
-                        cur.execute('UPDATE portfolio SET user_id = %s WHERE user_id IS NULL', (user_id,))
-                        conn.commit()
             else:
                 cur.execute('SELECT data FROM portfolio ORDER BY id DESC LIMIT 1')
-                row = cur.fetchone()
+            row = cur.fetchone()
         conn.close()
         return row[0] if row else {}
     else:
@@ -366,9 +358,13 @@ def get_portfolio():
 @app.route('/api/portfolio', methods=['POST'])
 @login_required
 def save_portfolio():
-    data = request.get_json()
-    save_portfolio_data(data, session['user_id'])
-    return jsonify({'ok': True})
+    try:
+        data = request.get_json()
+        save_portfolio_data(data, session['user_id'])
+        return jsonify({'ok': True})
+    except Exception as e:
+        print(f'[save_portfolio] {e}')
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/price/<path:ticker>')
