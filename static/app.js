@@ -169,7 +169,7 @@ function setStatus(state) {
   var dot = document.getElementById('status-dot');
   var txt = document.getElementById('status-text');
   dot.className = 'status-dot ' + state;
-  if (state === 'live')    txt.textContent = 'עודכן ' + new Date().toLocaleTimeString('he-IL');
+  if (state === 'live')    txt.textContent = 'עודכן ' + new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit', hour12: false});
   if (state === 'loading') txt.textContent = 'טוען...';
   if (state === 'error')   txt.textContent = 'שגיאת חיבור';
 }
