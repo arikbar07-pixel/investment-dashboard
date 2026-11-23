@@ -641,7 +641,7 @@ Respond in this exact JSON format:
 Return ONLY the JSON array, no other text."""
 
         msg = client.messages.create(
-            model='claude-haiku-4-5-20251001',
+            model='claude-haiku-5-5',
             max_tokens=2000,
             system=system_prompt,
             messages=[{'role': 'user', 'content': f'Asset: {ticker}\n\nNews:\n{news_text}'}]
@@ -654,6 +654,12 @@ Return ONLY the JSON array, no other text."""
             if text.startswith('json'):
                 text = text[4:]
         filtered = _json.loads(text.strip())
+
+        # If Claude filtered everything out, fall back to raw news
+        if not filtered:
+            filtered = [{'date': datetime.fromtimestamp(n.get('datetime',0)).strftime('%d.%m.%Y'),
+                         'headline': n.get('headline',''), 'summary': n.get('summary','')}
+                        for n in raw[:6]]
 
         _cache[key] = {'ts': time.time(), 'data': filtered}
         return jsonify(filtered)
