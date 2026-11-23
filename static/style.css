@@ -913,3 +913,107 @@ tr.tr-group-label td {
   }
   .ambient-bg { display: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOBILE MODE — user-selected at login
+   ═══════════════════════════════════════════════════════════════════════════ */
+body.mobile-mode {
+  --nav-h: 52px;
+}
+
+/* Hide sidebar always, show bottom nav always */
+body.mobile-mode .sidebar       { display: none !important; }
+body.mobile-mode .mobile-nav    { display: flex !important; }
+body.mobile-mode .clock         { display: none !important; }
+
+/* Layout */
+body.mobile-mode .main-layout {
+  margin-right: 0 !important;
+  padding-bottom: 72px;
+}
+
+/* Top nav compact */
+body.mobile-mode .top-nav { padding: 0 14px; }
+body.mobile-mode .nav-brand { gap: 6px; min-width: auto; }
+body.mobile-mode .nav-title { font-size: 15px; }
+body.mobile-mode .nav-end { gap: 8px; min-width: auto; }
+body.mobile-mode .btn-add-nav span { display: none; }
+body.mobile-mode .btn-add-nav { padding: 7px 10px; }
+body.mobile-mode .nav-status { gap: 5px; }
+body.mobile-mode .status-text { font-size: 11px; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Summary stats grid */
+body.mobile-mode .summary-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 12px 14px 8px;
+}
+body.mobile-mode .summary-grid .stat-full { grid-column: span 2; }
+body.mobile-mode .stat-label { font-size: 11px; }
+body.mobile-mode .stat-value { font-size: 22px; }
+
+/* Cards */
+body.mobile-mode .content-card { margin: 0 14px 14px; padding: 16px 14px; }
+body.mobile-mode .chart-panel  { margin: 0 14px 14px; }
+
+/* Summary tab bottom section */
+body.mobile-mode .summary-bottom { flex-direction: column; gap: 16px; }
+body.mobile-mode .pie-wrap       { flex: none; width: 100%; }
+body.mobile-mode .summary-header-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Table: horizontal scroll with sticky first column */
+body.mobile-mode .table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+body.mobile-mode table { font-size: 13px; }
+body.mobile-mode thead th { font-size: 11px; padding: 8px 10px; }
+body.mobile-mode tbody td { padding: 10px 10px; }
+
+/* Performance chart */
+body.mobile-mode .perf-chart-section { padding: 14px 14px 16px; }
+
+/* Bottom nav redesign for mobile-mode: icon + label vertical */
+body.mobile-mode .mobile-nav {
+  height: 62px;
+  padding: 0 4px;
+  justify-content: space-around;
+  overflow-x: visible;
+  gap: 0;
+}
+body.mobile-mode .mob-btn {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  gap: 3px;
+  font-size: 11px;
+  border-radius: 10px;
+}
+body.mobile-mode .mob-btn .mob-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+body.mobile-mode .mob-btn.mob-active {
+  color: var(--primary);
+  background: var(--primary-dim);
+}
+
+/* FAB (add button) in mobile mode */
+body.mobile-mode .mob-fab {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Chart panel controls */
+body.mobile-mode .chart-top { flex-direction: column; align-items: flex-start; gap: 8px; }
+body.mobile-mode .chart-controls { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+body.mobile-mode .range-group { flex-shrink: 0; }
+
+/* Form panel full-width on mobile */
+body.mobile-mode .form-panel {
+  width: 100% !important;
+}

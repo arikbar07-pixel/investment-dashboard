@@ -49,6 +49,10 @@ var CRYPTO_TABS = ['BTC', 'ETH'];
 // --- Boot ---
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Apply view mode (mobile/desktop) chosen at login
+  var viewMode = localStorage.getItem('viewMode') || 'desktop';
+  if (viewMode === 'mobile') document.body.classList.add('mobile-mode');
+
   startClock();
   setupAutocomplete();
   init();
@@ -196,6 +200,7 @@ function renderSummaryCards() {
 // --- Tabs ---
 
 var TAB_ICONS  = { 'BTC': '₿ ', 'ETH': '⟠ ' };
+var TAB_MOB_ICONS = { 'מניות': '📈', 'VOO': '🗂️', 'QQQ': '🗂️', 'BTC': '₿', 'ETH': '⟠', 'סיכום': '🏠' };
 var TAB_ORDER  = ['מניות', 'VOO', 'QQQ', 'BTC', 'ETH'];
 
 var MOB_ICONS = {
@@ -249,11 +254,18 @@ function renderMobileNav() {
   var cats = TAB_ORDER.filter(function(t) { return all.indexOf(t) !== -1; })
     .concat(all.filter(function(t) { return TAB_ORDER.indexOf(t) === -1; }))
     .concat(['סיכום']);
+  var isMobile = document.body.classList.contains('mobile-mode');
   var html = '<button class="mob-fab" onclick="toggleForm()">+</button>';
   cats.forEach(function(tab) {
-    var label  = (TAB_ICONS[tab] || '') + tab;
     var active = S.activeTab === tab ? ' mob-active' : '';
-    html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' + label + '</button>';
+    if (isMobile) {
+      var icon  = TAB_MOB_ICONS[tab] || '📂';
+      html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' +
+              '<span class="mob-icon">' + icon + '</span><span>' + tab + '</span></button>';
+    } else {
+      var label = (TAB_ICONS[tab] || '') + tab;
+      html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' + label + '</button>';
+    }
   });
   nav.innerHTML = html;
 }

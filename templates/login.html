@@ -16,18 +16,40 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 20px;
     }
     .card {
       background: #161b22;
       border: 1px solid #30363d;
       border-radius: 12px;
-      padding: 40px 36px;
+      padding: 36px 32px;
       width: 100%;
-      max-width: 360px;
+      max-width: 380px;
     }
     .logo { font-size: 36px; margin-bottom: 10px; text-align: center; }
     h1 { font-size: 20px; font-weight: 700; color: #f0f6fc; margin-bottom: 4px; text-align: center; }
-    .sub { font-size: 13px; color: #8b949e; margin-bottom: 28px; text-align: center; }
+    .sub { font-size: 13px; color: #8b949e; margin-bottom: 24px; text-align: center; }
+    /* Mode picker */
+    .mode-label { font-size: 11px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+    .mode-row { display: flex; gap: 10px; margin-bottom: 24px; }
+    .mode-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      padding: 14px 10px;
+      background: #21262d;
+      border: 2px solid #30363d;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color .18s, background .18s;
+      color: #8b949e;
+      font-family: inherit;
+    }
+    .mode-btn .icon { font-size: 26px; }
+    .mode-btn .label { font-size: 13px; font-weight: 600; }
+    .mode-btn.selected { border-color: #4493f8; background: rgba(68,147,248,.1); color: #f0f6fc; }
     .field { margin-bottom: 16px; }
     label { display: block; font-size: 12px; font-weight: 600; color: #8b949e; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
     input[type="text"], input[type="password"] {
@@ -79,6 +101,19 @@
     <div class="logo">📈</div>
     <h1>ההשקעות שלי</h1>
     <p class="sub">כנס לחשבון שלך</p>
+
+    <div class="mode-label">בחר מצב תצוגה</div>
+    <div class="mode-row">
+      <button type="button" class="mode-btn" id="mode-mobile" onclick="pickMode('mobile')">
+        <span class="icon">📱</span>
+        <span class="label">טלפון</span>
+      </button>
+      <button type="button" class="mode-btn" id="mode-desktop" onclick="pickMode('desktop')">
+        <span class="icon">💻</span>
+        <span class="label">מחשב</span>
+      </button>
+    </div>
+
     <form method="post">
       <div class="field">
         <label for="username">שם משתמש</label>
@@ -99,5 +134,15 @@
     {% endif %}
     <p class="switch">אין לך חשבון? <a href="/register">הירשם כאן</a></p>
   </div>
+  <script>
+    function pickMode(mode) {
+      localStorage.setItem('viewMode', mode);
+      document.getElementById('mode-mobile').classList.toggle('selected', mode === 'mobile');
+      document.getElementById('mode-desktop').classList.toggle('selected', mode === 'desktop');
+    }
+    // Restore saved choice
+    var saved = localStorage.getItem('viewMode') || 'desktop';
+    pickMode(saved);
+  </script>
 </body>
 </html>
