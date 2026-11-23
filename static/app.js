@@ -161,7 +161,7 @@ function setStatus(state) {
 
 function startClock() {
   var el = document.getElementById('clock');
-  function tick() { el.textContent = new Date().toLocaleString('he-IL'); }
+  function tick() { el.textContent = new Date().toLocaleTimeString('he-IL', {hour:'2-digit', minute:'2-digit', hour12: false}); }
   tick();
   setInterval(tick, 1000);
 }
