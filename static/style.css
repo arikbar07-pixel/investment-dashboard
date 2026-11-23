@@ -400,7 +400,7 @@ body {
 .content-card {
   margin: 0 20px 16px;
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .spinner {
@@ -594,6 +594,7 @@ input[type="date"] { direction: ltr; text-align: right; color-scheme: dark; }
   border-radius: var(--radius);
   overflow: hidden;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -884,6 +885,17 @@ tr.tr-group-label td {
   .content-card  { margin: 0 12px 14px; }
   .chart-panel   { margin: 0 12px 14px; }
   .summary-grid  { padding: 14px 12px 10px; }
+
+  /* Compact top nav on mobile */
+  .top-nav { padding: 0 12px; }
+  .nav-brand { min-width: auto; gap: 6px; }
+  .nav-title { font-size: 15px; }
+  .clock { display: none; }
+  .nav-end { min-width: auto; gap: 8px; }
+  .btn-add-nav span { display: none; }
+  .btn-add-nav { padding: 8px 10px; }
+  .nav-status { gap: 5px; }
+  .status-text { font-size: 10px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
 @media (max-width: 600px) {
