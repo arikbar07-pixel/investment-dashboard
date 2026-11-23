@@ -50,14 +50,27 @@ var CRYPTO_TABS = ['BTC', 'ETH'];
 
 document.addEventListener('DOMContentLoaded', function() {
   // Apply view mode (mobile/desktop) chosen at login
-  var viewMode = localStorage.getItem('viewMode') || 'desktop';
-  if (viewMode === 'mobile') document.body.classList.add('mobile-mode');
+  applyMode(localStorage.getItem('viewMode') || 'desktop');
 
   startClock();
   setupAutocomplete();
   init();
   if (localStorage.getItem('theme') === 'light') applyTheme('light');
 });
+
+function applyMode(mode) {
+  document.body.classList.toggle('mobile-mode', mode === 'mobile');
+  var btn = document.getElementById('btn-mode-toggle');
+  if (btn) btn.textContent = mode === 'mobile' ? '💻' : '📱';
+}
+
+function toggleMode() {
+  var current = localStorage.getItem('viewMode') || 'desktop';
+  var next = current === 'mobile' ? 'desktop' : 'mobile';
+  localStorage.setItem('viewMode', next);
+  applyMode(next);
+  renderMobileNav();
+}
 
 function applyTheme(theme) {
   document.body.classList.toggle('light', theme === 'light');
@@ -254,18 +267,10 @@ function renderMobileNav() {
   var cats = TAB_ORDER.filter(function(t) { return all.indexOf(t) !== -1; })
     .concat(all.filter(function(t) { return TAB_ORDER.indexOf(t) === -1; }))
     .concat(['סיכום']);
-  var isMobile = document.body.classList.contains('mobile-mode');
   var html = '<button class="mob-fab" onclick="toggleForm()">+</button>';
   cats.forEach(function(tab) {
     var active = S.activeTab === tab ? ' mob-active' : '';
-    if (isMobile) {
-      var icon  = TAB_MOB_ICONS[tab] || '📂';
-      html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' +
-              '<span class="mob-icon">' + icon + '</span><span>' + tab + '</span></button>';
-    } else {
-      var label = (TAB_ICONS[tab] || '') + tab;
-      html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' + label + '</button>';
-    }
+    html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' + tab + '</button>';
   });
   nav.innerHTML = html;
 }

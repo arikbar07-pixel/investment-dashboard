@@ -17,6 +17,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="ההשקעות שלי">
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+  <!-- Apply mobile-mode BEFORE CSS renders to prevent flash -->
+  <script>if(localStorage.getItem('viewMode')==='mobile')document.documentElement.classList.add('mobile-mode-pre');</script>
+  <style>html.mobile-mode-pre body,.mobile-mode-pre .sidebar{display:none!important}</style>
 </head>
 <body>
 
@@ -38,9 +41,13 @@
       <div class="clock" id="clock"></div>
       <span class="nav-rate" id="nav-rate">—</span>
       <button class="btn-theme" id="theme-btn" onclick="toggleTheme()" title="החלף מצב תצוגה">●</button>
+      <button class="btn-mode-toggle" id="btn-mode-toggle" onclick="toggleMode()" title="החלף מוד"></button>
+      <a href="/logout" class="btn-nav-logout" title="יציאה">
+        <span class="material-symbols-outlined" style="font-size:18px">logout</span>
+      </a>
       <button class="btn-add-nav" onclick="toggleForm()">
         <span class="material-symbols-outlined" style="font-size:17px;vertical-align:-3px;margin-left:4px">add</span>
-        הוסף נכס
+        <span class="btn-add-text">הוסף נכס</span>
       </button>
     </div>
   </nav>
