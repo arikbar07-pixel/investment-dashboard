@@ -581,7 +581,7 @@ def get_chart(ticker):
 def get_news(ticker):
     key = 'news:' + ticker
     cached_val = _cache.get(key)
-    if cached_val and time.time() - cached_val['ts'] < 1800:
+    if cached_val and time.time() - cached_val['ts'] < 300:
         return jsonify(cached_val['data'])
 
     try:

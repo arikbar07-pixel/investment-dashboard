@@ -488,10 +488,13 @@ function renderPieChart() {
       plugins: {
         legend: {
           position: 'bottom',
+          onClick: null,
           labels: {
             color: '#c9d1d9',
             padding: 16,
-            font: { size: 13, weight: '600' }
+            font: { size: 13, weight: '600' },
+            boxWidth: 0,
+            boxHeight: 0
           }
         },
         tooltip: {

@@ -689,7 +689,7 @@ tr.tr-total td { font-weight: 700; color: var(--text-bright); }
 .chart-price-label  { font-size: 18px; font-weight: 600; color: var(--text-bright); }
 .chart-change-label { font-size: 14px; font-weight: 600; }
 
-.chart-controls { display: flex; align-items: center; gap: 10px; }
+.chart-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .range-group    { display: flex; gap: 4px; }
 .range-btn {
   background: rgba(255,255,255,.04);
@@ -900,7 +900,9 @@ tr.tr-group-label td {
 
 @media (max-width: 600px) {
   .summary-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .chart-top { flex-direction: column; align-items: flex-start; }
+  .chart-top { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .chart-controls { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 4px; }
+  .range-group { flex-shrink: 0; }
 }
 
 /* Respect reduced motion */
