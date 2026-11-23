@@ -539,9 +539,19 @@ async function renderPortfolioChart() {
   var canvas = document.getElementById('portfolio-perf-chart');
   if (!canvas) return;
 
+  // Show loading state
+  var wrap = canvas.parentElement;
+  if (wrap) wrap.innerHTML = '<div style="color:#8b949e;font-size:13px;padding:20px 0;text-align:center">⟳ טוען נתוני תיק...</div>';
+
   try {
     var data = await apiFetch('/api/portfolio/history');
-    if (!data || !data.length) return;
+    if (!data || !data.length) {
+      if (wrap) wrap.innerHTML = '<div style="color:#8b949e;font-size:13px;padding:20px 0;text-align:center">אין עדיין נתוני היסטוריה</div>';
+      return;
+    }
+    // Restore canvas after loading message
+    wrap.innerHTML = '<canvas id="portfolio-perf-chart"></canvas>';
+    canvas = document.getElementById('portfolio-perf-chart');
 
     // Add 6 future placeholder months so the chart looks like a full timeline
     var monthLabelsHe = {'01':'ינו׳','02':'פבר׳','03':'מרץ','04':'אפר׳','05':'מאי','06':'יוני','07':'יולי','08':'אוג׳','09':'ספט׳','10':'אוק׳','11':'נוב׳','12':'דצמ׳'};
