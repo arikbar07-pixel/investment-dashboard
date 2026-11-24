@@ -763,7 +763,14 @@ def get_news(ticker):
         items, err = _summarize_news_he(ticker, raw, api_key)
     except Exception as e:
         print(f'[news] claude {ticker}: {type(e).__name__}: {e}')
-        return jsonify({'items': [], 'last_day': is_last_day, 'status': 'error'})
+        # Short, key-free reason so the problem can be diagnosed without server logs
+        detail = type(e).__name__
+        status_code = getattr(e, 'status_code', None)
+        if status_code:
+            detail += f' {status_code}'
+        msg = getattr(e, 'message', None) or str(e)
+        detail += ': ' + msg.replace(api_key, '***')[:200]
+        return jsonify({'items': [], 'last_day': is_last_day, 'status': 'error', 'detail': detail})
     if err:
         print(f'[news] claude {ticker}: {err}')
         return jsonify({'items': [], 'last_day': is_last_day, 'status': 'error'})
