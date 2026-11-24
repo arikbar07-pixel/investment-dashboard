@@ -1,4 +1,5 @@
 import json
+import re
 import os
 import time
 from datetime import datetime, timedelta
@@ -707,6 +708,21 @@ def _parse_news_json(text):
     return json.loads(text[i:j + 1]).get('items', [])
 
 
+_HE_RE = re.compile(r'[\u0590-\u05FF]')
+_BAD_SCRIPT_RE = re.compile(r'[\u0400-\u04FF\u0600-\u06FF\u4E00-\u9FFF]')  # Cyrillic / Arabic / CJK
+
+
+def _is_hebrew_point(text):
+    """True if the bullet is mostly Hebrew (tickers/numbers in Latin are fine)."""
+    if not text or _BAD_SCRIPT_RE.search(text):
+        return False
+    letters = [c for c in text if c.isalpha()]
+    if not letters:
+        return False
+    he = sum(1 for c in letters if _HE_RE.match(c))
+    return he / len(letters) >= 0.5
+
+
 def _summarize_news_he(ticker, raw, api_key):
     """Returns (points, error). points: list of dicts for the UI, Hebrew only."""
     import anthropic as ac
@@ -715,20 +731,36 @@ def _summarize_news_he(ticker, raw, api_key):
     for i, n in enumerate(raw, 1):
         when = datetime.fromtimestamp(n['ts']).strftime('%d.%m %H:%M')
         news_text += f"{i}. [{when}] {n['headline']}\n{n['summary'][:500]}\n\n"
+    user_msg = (f'Asset: {ticker}\n\nNews:\n{news_text}\n'
+                'IMPORTANT: write every "point" in Hebrew (עברית) only — the source news is in English, translate it.')
     req = dict(model='claude-haiku-5-5', max_tokens=4000, system=_NEWS_SYSTEM,
-               messages=[{'role': 'user', 'content': f'Asset: {ticker}\n\nNews:\n{news_text}'}])
-    try:
-        msg = client.messages.create(
-            output_config={'effort': 'low', 'format': {'type': 'json_schema', 'schema': _NEWS_SCHEMA}}, **req)
-    except ac.BadRequestError as e:
-        # e.g. structured outputs unavailable for this key/model — retry with plain JSON instructions
-        print(f'[news] structured output rejected ({e.message}); retrying without it')
-        req['system'] += '\n\nRespond with ONLY a JSON object: {"items":[{"index":1,"point":"...","impact":"positive"}]}'
-        msg = client.messages.create(**req)
-    if msg.stop_reason == 'refusal':
-        return [], 'refusal'
-    text = next((b.text for b in msg.content if b.type == 'text'), '')
-    picked = _parse_news_json(text)
+               messages=[{'role': 'user', 'content': user_msg}])
+    fmt = {'effort': 'low', 'format': {'type': 'json_schema', 'schema': _NEWS_SCHEMA}}
+
+    def ask():
+        nonlocal fmt
+        try:
+            if fmt:
+                return client.messages.create(output_config=fmt, **req)
+        except ac.BadRequestError as e:
+            # e.g. structured outputs unavailable for this key/model — fall back to plain JSON instructions
+            print(f'[news] structured output rejected ({e.message}); retrying without it')
+            fmt = None
+            req['system'] += '\n\nRespond with ONLY a JSON object: {"items":[{"index":1,"point":"...","impact":"positive"}]}'
+        return client.messages.create(**req)
+
+    picked = []
+    for attempt in range(2):
+        msg = ask()
+        if msg.stop_reason == 'refusal':
+            return [], 'refusal'
+        text = next((b.text for b in msg.content if b.type == 'text'), '')
+        picked = [it for it in _parse_news_json(text) if _is_hebrew_point(it.get('point', ''))]
+        if picked:
+            break
+        print(f'[news] {ticker}: reply not in Hebrew (attempt {attempt + 1})')
+        req['messages'] = [{'role': 'user', 'content': user_msg + '\n\nYour previous answer was not in Hebrew. '
+                                                        'Answer again with every point written in Hebrew.'}]
     out, used = [], set()
     for it in picked:
         idx = it.get('index')
