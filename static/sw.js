@@ -1,4 +1,4 @@
-const CACHE = 'equityflow-v1';
+const CACHE = 'equityflow-v2';
 const STATIC = [
   '/',
   '/static/app.js',
@@ -22,16 +22,15 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.pathname.startsWith('/api/') || url.pathname === '/login' || url.pathname === '/logout') return;
+  if (e.request.method !== 'GET') return;
+  // Network-first: always serve the latest app version, fall back to cache offline
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (response && response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
-        }
-        return response;
-      });
-    })
+    fetch(e.request).then(response => {
+      if (response && response.ok) {
+        const clone = response.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+      }
+      return response;
+    }).catch(() => caches.match(e.request, { ignoreSearch: true }))
   );
 });
