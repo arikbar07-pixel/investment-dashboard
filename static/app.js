@@ -290,14 +290,11 @@ function renderMobileNav() {
   var html = '';
   cats.forEach(function(tab) {
     var active = S.activeTab === tab ? ' mob-active' : '';
-    var icon   = MOB_ICONS[tab] || 'folder';
     html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab.replace(/'/g, "\\'") + '\')">' +
-      '<span class="material-symbols-outlined mob-icon">' + icon + '</span>' +
       '<span class="mob-label">' + tab + '</span></button>';
   });
-  html += '<button class="mob-btn mob-btn-add-cat" onclick="promptAddCategory()" title="הוסף קטגוריה">' +
-    '<span class="material-symbols-outlined mob-icon">create_new_folder</span>' +
-    '<span class="mob-label">קטגוריה</span></button>';
+  html += '<button class="mob-btn mob-btn-add-cat" onclick="promptAddCategory()" title="הוסף קטגוריה" aria-label="הוסף קטגוריה">' +
+    '<span class="mob-label">＋</span></button>';
   nav.innerHTML = html;
   nav.classList.toggle('mob-scroll', cats.length + 1 > 5);
   var act = nav.querySelector('.mob-active');
