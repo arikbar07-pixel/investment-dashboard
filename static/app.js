@@ -50,7 +50,7 @@ var CRYPTO_TABS = ['BTC', 'ETH'];
 
 document.addEventListener('DOMContentLoaded', function() {
   // Apply view mode (mobile/desktop) chosen at login
-  applyMode(localStorage.getItem('viewMode') || 'desktop');
+  applyMode(getViewMode());
 
   startClock();
   setupAutocomplete();
@@ -58,18 +58,36 @@ document.addEventListener('DOMContentLoaded', function() {
   if (localStorage.getItem('theme') === 'light') applyTheme('light');
 });
 
+function getViewMode() {
+  var saved = null;
+  try { saved = localStorage.getItem('viewMode'); } catch(e) {}
+  if (saved === 'mobile' || saved === 'desktop') return saved;
+  // No explicit choice yet: phone-sized screens get the mobile layout
+  return window.matchMedia('(max-width: 768px)').matches ? 'mobile' : 'desktop';
+}
+
+function isMobile() {
+  return document.body.classList.contains('mobile-mode');
+}
+
 function applyMode(mode) {
   document.body.classList.toggle('mobile-mode', mode === 'mobile');
   var btn = document.getElementById('btn-mode-toggle');
-  if (btn) btn.textContent = mode === 'mobile' ? '💻' : '📱';
+  if (btn) {
+    btn.innerHTML = '<span class="material-symbols-outlined">' +
+      (mode === 'mobile' ? 'desktop_windows' : 'smartphone') + '</span>';
+    btn.title = mode === 'mobile' ? 'עבור לתצוגת מחשב' : 'עבור לתצוגת טלפון';
+  }
 }
 
 function toggleMode() {
-  var current = localStorage.getItem('viewMode') || 'desktop';
-  var next = current === 'mobile' ? 'desktop' : 'mobile';
-  localStorage.setItem('viewMode', next);
+  var next = getViewMode() === 'mobile' ? 'desktop' : 'mobile';
+  try { localStorage.setItem('viewMode', next); } catch(e) {}
   applyMode(next);
   renderMobileNav();
+  if (S.formOpen) toggleForm();
+  renderActiveTab();
+  if (S.chartTicker) loadChart(S.chartRange);
 }
 
 function applyTheme(theme) {
@@ -219,9 +237,9 @@ var TAB_ORDER  = ['מניות', 'VOO', 'QQQ', 'BTC', 'ETH'];
 var MOB_ICONS = {
   'מניות': 'show_chart',
   'BTC':   'currency_bitcoin',
-  'ETH':   'currency_bitcoin',
-  'VOO':   'pie_chart',
-  'QQQ':   'pie_chart',
+  'ETH':   'diamond',
+  'VOO':   'account_balance',
+  'QQQ':   'stacked_line_chart',
   'סיכום': 'dashboard'
 };
 
@@ -267,12 +285,25 @@ function renderMobileNav() {
   var cats = TAB_ORDER.filter(function(t) { return all.indexOf(t) !== -1; })
     .concat(all.filter(function(t) { return TAB_ORDER.indexOf(t) === -1; }))
     .concat(['סיכום']);
-  var html = '<button class="mob-fab" onclick="toggleForm()">+</button>';
+  // Summary first (home), then categories
+  cats = ['סיכום'].concat(cats.filter(function(t) { return t !== 'סיכום'; }));
+  var html = '';
   cats.forEach(function(tab) {
     var active = S.activeTab === tab ? ' mob-active' : '';
-    html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab + '\')">' + tab + '</button>';
+    var icon   = MOB_ICONS[tab] || 'folder';
+    html += '<button class="mob-btn' + active + '" onclick="switchTab(\'' + tab.replace(/'/g, "\\'") + '\')">' +
+      '<span class="material-symbols-outlined mob-icon">' + icon + '</span>' +
+      '<span class="mob-label">' + tab + '</span></button>';
   });
+  html += '<button class="mob-btn mob-btn-add-cat" onclick="promptAddCategory()" title="הוסף קטגוריה">' +
+    '<span class="material-symbols-outlined mob-icon">create_new_folder</span>' +
+    '<span class="mob-label">קטגוריה</span></button>';
   nav.innerHTML = html;
+  nav.classList.toggle('mob-scroll', cats.length + 1 > 5);
+  var act = nav.querySelector('.mob-active');
+  if (act && act.scrollIntoView && nav.scrollWidth > nav.clientWidth) {
+    act.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
 }
 
 function promptAddCategory() {
@@ -337,8 +368,10 @@ function renderActiveTab() {
 
 function renderTable(investments, isStocks) {
   if (!investments.length) {
-    return '<div class="spinner">אין השקעות בקטגוריה זו &mdash; הוסף אחת למעלה.</div>';
+    return '<div class="spinner">אין השקעות בקטגוריה זו &mdash; ' +
+      (isMobile() ? 'לחץ + כדי להוסיף.' : 'הוסף אחת למעלה.') + '</div>';
   }
+  if (isMobile()) return renderCards(investments);
 
   var invUsd = 0, invIls = 0, curIls = 0;
   var colCount = 9;
@@ -400,6 +433,91 @@ function renderTable(investments, isStocks) {
     '</tbody></table></div>';
 }
 
+// --- Mobile: investment cards ---
+
+function renderCards(investments) {
+  var invUsd = 0, invIls = 0, curIls = 0;
+  var catEsc = S.activeTab.replace(/'/g, "\\'");
+
+  var cards = investments.map(function(inv) {
+    var pd  = S.prices[inv.ticker];
+    var p   = pd ? pd.price : null;
+    var cur = p ? calcCurrentIls(inv, p) : null;
+    var pct = p ? (p - inv.purchase_price) / inv.purchase_price * 100 : null;
+    var cls = pct === null ? '' : pct >= 0 ? 'pos' : 'neg';
+    var rowIls = calcInvestedIls(inv);
+    var pnl = cur !== null ? cur - rowIls : null;
+
+    invUsd += inv.invested_usd;
+    invIls += rowIls;
+    if (cur) curIls += cur;
+
+    var idEsc = inv.id.replace(/'/g, "\\'");
+    var active = S.chartTicker === inv.ticker ? ' m-card-active' : '';
+
+    return '<div class="m-card' + active + '" data-ticker="' + inv.ticker + '" onclick="onRowClick(\'' + inv.ticker + '\', true)">' +
+      '<div class="m-card-head">' +
+        '<div class="m-card-id">' +
+          '<span class="m-ticker">' + inv.ticker + '</span>' +
+          '<span class="m-name">' + (inv.name || '') + '</span>' +
+        '</div>' +
+        '<div class="m-card-now">' +
+          '<span class="m-value" id="val-' + inv.id + '">' + (cur ? '₪' + fmt0(cur) : '...') + '</span>' +
+          '<span class="m-pill ' + cls + '" id="pct-' + inv.id + '">' +
+            (pct === null ? '...' : (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%') + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="m-card-grid">' +
+        '<div class="m-cell"><span class="m-k">הושקע</span><span class="m-v">₪' + fmt0(rowIls) + '</span><span class="m-sub">$' + fmt2(inv.invested_usd) + '</span></div>' +
+        '<div class="m-cell"><span class="m-k">רווח / הפסד</span><span class="m-v td-pct ' + cls + '">' +
+          (pnl === null ? '...' : (pnl >= 0 ? '+' : '−') + '₪' + fmt0(Math.abs(pnl))) + '</span></div>' +
+        '<div class="m-cell"><span class="m-k">מחיר קנייה</span><span class="m-v">$' + fmtPrice(inv.purchase_price) + '</span><span class="m-sub">' + fmtDate(inv.purchase_date) + '</span></div>' +
+        '<div class="m-cell"><span class="m-k">מחיר עכשווי</span><span class="m-v" id="pr-' + inv.id + '">' + (p ? '$' + fmtPrice(p) : '...') + '</span></div>' +
+      '</div>' +
+      '<button class="m-del" onclick="delRow(event,\'' + catEsc + '\',\'' + idEsc + '\')" aria-label="מחק השקעה">' +
+        '<span class="material-symbols-outlined">delete</span></button>' +
+    '</div>';
+  }).join('');
+
+  var totalPct = invIls ? (curIls - invIls) / invIls * 100 : 0;
+  var totalPnl = curIls - invIls;
+  var tCls = totalPct >= 0 ? 'pos' : 'neg';
+
+  var total = '<div class="m-total">' +
+    '<div class="m-total-row"><span class="m-k">סה"כ ' + S.activeTab + ' · ' + investments.length + ' פוזיציות</span>' +
+      '<span class="m-pill ' + tCls + '">' + (totalPct >= 0 ? '+' : '') + totalPct.toFixed(2) + '%</span></div>' +
+    '<div class="m-total-row">' +
+      '<div class="m-cell"><span class="m-k">שווי נוכחי</span><span class="m-total-val">₪' + fmt0(curIls) + '</span></div>' +
+      '<div class="m-cell m-cell-end"><span class="m-k">רווח / הפסד</span><span class="m-v td-pct ' + tCls + '">' +
+        (totalPnl >= 0 ? '+' : '−') + '₪' + fmt0(Math.abs(totalPnl)) + '</span></div>' +
+    '</div>' +
+  '</div>';
+
+  return total + '<div class="m-list">' + cards + '</div>';
+}
+
+function renderSummaryCardsMobile(displayCats) {
+  return '<div class="m-section-title">פילוח לפי קטגוריה</div><div class="m-list">' +
+    displayCats.map(function(c) {
+      var cls = c.pct >= 0 ? 'pos' : 'neg';
+      var pnl = c.curIls - c.invIls;
+      return '<div class="m-card m-card-compact" onclick="switchTab(\'' + c.label.replace(/'/g, "\\'") + '\')">' +
+        '<div class="m-card-head">' +
+          '<div class="m-card-id">' +
+            '<span class="m-ticker">' + c.label + '</span>' +
+            '<span class="m-name">' + c.count + ' פוזיציות · הושקע ₪' + fmt0(c.invIls) + '</span>' +
+          '</div>' +
+          '<div class="m-card-now">' +
+            '<span class="m-value">₪' + fmt0(c.curIls) + '</span>' +
+            '<span class="m-pill ' + cls + '">' + (c.pct >= 0 ? '+' : '') + c.pct.toFixed(2) + '%</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="m-card-foot"><span class="td-pct ' + cls + '">' + (pnl >= 0 ? '+' : '−') + '₪' + fmt0(Math.abs(pnl)) + '</span>' +
+          '<span class="material-symbols-outlined m-chev">chevron_left</span></div>' +
+      '</div>';
+    }).join('') + '</div>';
+}
+
 // --- Summary tab ---
 
 function renderSummaryTab() {
@@ -422,6 +540,7 @@ function renderSummaryTab() {
     gCurIls += curIls;
     var pct = invIls ? (curIls - invIls) / invIls * 100 : 0;
     var cls = pct >= 0 ? 'pos' : 'neg';
+    cat.count = invs.length; cat.invIls = invIls; cat.curIls = curIls; cat.pct = pct;
     return '<tr>' +
       '<td class="td-ticker">' + cat.label + '</td>' +
       '<td>' + invs.length + ' פוזיציות</td>' +
@@ -436,6 +555,19 @@ function renderSummaryTab() {
   var gPct = gInvIls ? (gCurIls - gInvIls) / gInvIls * 100 : 0;
   var gCls = gPct >= 0 ? 'pos' : 'neg';
   var pnlColor = gPct >= 0 ? 'var(--green)' : 'var(--red)';
+
+  if (isMobile()) {
+    // Top stat cards (.summary-grid) already show the totals on mobile
+    return '<div class="perf-chart-section m-pie-section">' +
+      '<div class="perf-chart-title">הרכב התיק</div>' +
+      '<div class="pie-wrap"><canvas id="pie-chart"></canvas></div>' +
+      '</div>' +
+      renderSummaryCardsMobile(displayCats) +
+      '<div class="perf-chart-section">' +
+      '<div class="perf-chart-title">ביצועי תיק לאורך זמן (₪)</div>' +
+      '<div class="perf-chart-wrap"><canvas id="portfolio-perf-chart"></canvas></div>' +
+      '</div>';
+  }
 
   return '<div class="summary-header-cards">' +
     '<div class="sum-card"><div class="sum-card-label">סה"כ הושקע</div><div class="sum-card-value">₪' + fmt0(gInvIls) + '</div></div>' +
@@ -493,7 +625,7 @@ function renderPieChart() {
       datasets: [{
         data: values,
         backgroundColor: colors.slice(0, values.length),
-        borderColor: '#161b22',
+        borderColor: document.body.classList.contains('light') ? '#ffffff' : '#161b22',
         borderWidth: 3,
         hoverOffset: 6
       }]
@@ -507,11 +639,13 @@ function renderPieChart() {
           position: 'bottom',
           onClick: null,
           labels: {
-            color: '#c9d1d9',
-            padding: 16,
+            color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#c9d1d9',
+            padding: isMobile() ? 12 : 16,
             font: { size: 13, weight: '600' },
-            boxWidth: 0,
-            boxHeight: 0
+            usePointStyle: isMobile(),
+            pointStyle: 'circle',
+            boxWidth: isMobile() ? 8 : 0,
+            boxHeight: isMobile() ? 8 : 0
           }
         },
         tooltip: {
@@ -571,13 +705,14 @@ async function renderPortfolioChart() {
     if (S.perfChart) { S.perfChart.destroy(); S.perfChart = null; }
 
     // Set canvas width so every bar is at least 56px — enables horizontal scroll for many months
-    var BAR_W = 56;
+    var BAR_W = isMobile() ? 44 : 56;
     var minW   = labels.length * BAR_W;
     var wrapW  = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
     canvas.style.width  = Math.max(minW, wrapW) + 'px';
-    canvas.style.height = '250px';
+    var perfH = isMobile() ? 210 : 250;
+    canvas.style.height = perfH + 'px';
     canvas.width  = Math.max(minW, wrapW);
-    canvas.height = 250;
+    canvas.height = perfH;
 
     var liveFlags = data.map(function(d) { return d.live; });
 
@@ -646,8 +781,11 @@ async function renderPortfolioChart() {
 
 // --- Chart ---
 
-function onRowClick(ticker) {
+function onRowClick(ticker, userTap) {
   S.chartTicker = ticker;
+  document.querySelectorAll('.m-card[data-ticker]').forEach(function(c) {
+    c.classList.toggle('m-card-active', c.dataset.ticker === ticker);
+  });
   document.getElementById('chart-ticker').textContent = ticker;
   var pd = S.prices[ticker];
   if (pd && pd.price) {
@@ -659,6 +797,12 @@ function onRowClick(ticker) {
   document.getElementById('chart-panel').style.display = 'block';
   loadChart(S.chartRange);
   loadNews(ticker);
+  if (userTap && isMobile()) {
+    var panel = document.getElementById('chart-panel');
+    var navH  = document.querySelector('.top-nav').offsetHeight;
+    var y = panel.getBoundingClientRect().top + window.pageYOffset - navH - 8;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+  }
 }
 
 function loadNews(ticker) {
@@ -707,6 +851,7 @@ function setChartType(type) {
 }
 
 function closeChart() {
+  document.querySelectorAll('.m-card-active').forEach(function(c) { c.classList.remove('m-card-active'); });
   document.getElementById('chart-panel').style.display = 'none';
   document.getElementById('news-section').style.display = 'none';
   if (_priceChart) { _priceChart.remove(); _priceChart = null; }
@@ -767,7 +912,8 @@ function drawChart(points) {
 
   if (_priceChart) { _priceChart.remove(); _priceChart = null; }
   container.innerHTML = '';
-  container.style.height = '280px';
+  var chartH = isMobile() ? 240 : 280;
+  container.style.height = chartH + 'px';
 
   var first = points[0].price, last = points[points.length - 1].price;
   var isUp  = last >= first;
@@ -781,13 +927,14 @@ function drawChart(points) {
 
   _priceChart = LightweightCharts.createChart(container, {
     width:  chartW,
-    height: 280,
+    height: chartH,
     layout: { background: { color: chartBg }, textColor: chartTxt },
     grid: {
       vertLines: { color: chartGrd },
       horzLines: { color: chartGrd }
     },
     rightPriceScale: { borderColor: chartBdr },
+    handleScroll: isMobile() ? { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false } : true,
     timeScale: {
       borderColor: chartBdr,
       timeVisible: true,
@@ -835,7 +982,7 @@ function drawChart(points) {
         '<span style="color:' + chgColor + ';font-weight:700">שינוי: ' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%</span>';
       tooltip.style.display = 'block';
       var x = param.point ? param.point.x : 0;
-      tooltip.style.left = (x < container.clientWidth / 2 ? x + 12 : x - 145) + 'px';
+      tooltip.style.left = Math.max(4, Math.min(container.clientWidth - 140, x < container.clientWidth / 2 ? x + 12 : x - 145)) + 'px';
       tooltip.style.top = '10px';
     });
   } else {
@@ -846,10 +993,13 @@ function drawChart(points) {
   }
 
   _priceChart.timeScale().fitContent();
-  window.addEventListener('resize', function() {
-    if (_priceChart) _priceChart.applyOptions({ width: container.clientWidth });
-  });
 }
+
+// One resize listener for the price chart (was added on every redraw)
+window.addEventListener('resize', function() {
+  var c = document.getElementById('tv-chart');
+  if (_priceChart && c && c.clientWidth) _priceChart.applyOptions({ width: c.clientWidth });
+});
 
 // --- Analyst targets ---
 
@@ -875,6 +1025,7 @@ function toggleForm() {
   var overlay = document.getElementById('form-overlay');
   panel.classList.toggle('open', S.formOpen);
   if (overlay) overlay.style.display = S.formOpen ? 'block' : 'none';
+  document.body.classList.toggle('form-open', S.formOpen);
 }
 
 var _acTimer = null;

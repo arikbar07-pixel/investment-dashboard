@@ -141,7 +141,9 @@
       document.getElementById('mode-desktop').classList.toggle('selected', mode === 'desktop');
     }
     // Restore saved choice
-    var saved = localStorage.getItem('viewMode') || 'desktop';
+    // Default: phone-sized screens start in mobile mode
+    var saved = localStorage.getItem('viewMode') ||
+      (window.matchMedia('(max-width: 768px)').matches ? 'mobile' : 'desktop');
     pickMode(saved);
   </script>
 </body>
