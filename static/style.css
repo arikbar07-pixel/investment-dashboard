@@ -959,7 +959,7 @@ tr.tr-group-label td {
    ═══════════════════════════════════════════════════════════════════════════ */
 body.mobile-mode {
   --nav-h:     54px;
-  --mnav-h:    64px;
+  --mnav-h:    60px;
   --safe-top:  env(safe-area-inset-top, 0px);
   --safe-bot:  env(safe-area-inset-bottom, 0px);
   --gutter:    14px;
@@ -1259,12 +1259,12 @@ body.mobile-mode #news-section { padding: 0 14px 14px !important; }
 body.mobile-mode .news-divider > div:first-child { flex-direction: column; gap: 4px !important; }
 body.mobile-mode .news-headline { font-size: 14px; }
 
-/* ── Bottom tab bar ─────────────────────────────────────────────────────── */
+/* ── Bottom tab bar: text-only category pills ───────────────────────────── */
 body.mobile-mode .mobile-nav {
   display: flex !important;
   height: calc(var(--mnav-h) + var(--safe-bot));
-  padding: 6px 6px calc(6px + var(--safe-bot));
-  gap: 2px;
+  padding: 10px 8px calc(10px + var(--safe-bot));
+  gap: 4px;
   align-items: stretch;
   justify-content: space-around;
   overflow-x: auto;
@@ -1275,30 +1275,25 @@ body.mobile-mode .mobile-nav {
 }
 body.mobile-mode .mobile-nav::-webkit-scrollbar { display: none; }
 body.mobile-mode .mob-btn {
-  flex: 1 0 0;
-  min-width: 58px;
-  flex-direction: column;
+  flex: 1 0 auto;
+  min-width: 52px;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 4px 2px;
-  font-size: 11px;
+  padding: 0 12px;
+  font-size: 14px;
   font-weight: 600;
   border-radius: 12px;
   scroll-snap-align: center;
 }
 body.mobile-mode .mobile-nav.mob-scroll { justify-content: flex-start; }
-body.mobile-mode .mobile-nav.mob-scroll .mob-btn { flex: 0 0 64px; }
-body.mobile-mode .mob-icon  { font-size: 22px; line-height: 1; transition: transform .15s; }
-body.mobile-mode .mob-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-body.mobile-mode .mob-btn.mob-active { color: var(--primary); background: none; }
-body.mobile-mode .mob-btn.mob-active .mob-icon {
-  font-variation-settings: 'FILL' 1;
+body.mobile-mode .mobile-nav.mob-scroll .mob-btn { flex: 0 0 auto; }
+body.mobile-mode .mob-label { white-space: nowrap; }
+body.mobile-mode .mob-btn.mob-active {
+  color: var(--primary);
   background: var(--primary-dim);
-  border-radius: 999px;
-  padding: 3px 14px;
+  font-weight: 700;
 }
-body.mobile-mode .mob-btn-add-cat { opacity: .7; }
+body.mobile-mode .mob-btn-add-cat { flex: 0 0 44px; min-width: 44px; padding: 0; font-size: 18px; opacity: .7; }
 @media (hover: none) { body.mobile-mode .mob-btn:hover { color: inherit; } body.mobile-mode .mob-btn.mob-active:hover { color: var(--primary); } }
 
 /* ── Floating add button ────────────────────────────────────────────────── */
