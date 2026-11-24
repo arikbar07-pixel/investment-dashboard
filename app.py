@@ -683,7 +683,8 @@ From the numbered news list, pick AT MOST 5 items most likely to move the price 
 Prefer: earnings and guidance, analyst upgrades/downgrades and price targets, regulation and lawsuits, M&A,
 leadership changes, major product/contract news, and macro events with direct impact (Fed, CPI, jobs) for index funds and crypto.
 Skip PR fluff, generic listicles, duplicates of the same story, and items not really about this asset.
-Never invent facts beyond the given text.
+Never invent facts beyond the given text. State facts and likely price impact only — never give advice
+(no "buy", "sell", "take profits", "consider ...").
 
 For each picked item return:
 - index: the item's number from the list
