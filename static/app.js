@@ -5,7 +5,7 @@ var S = {
   prices:      {},
   targets:     {},
   usdIls:      3.65,
-  activeTab:   'מניות',
+  activeTab:   'סיכום',
   chartTicker: null,
   chartRange:  '1mo',
   pieChart:    null,
@@ -118,7 +118,7 @@ async function init() {
     S.usdIls = results[1].rate || 3.65;
     await refreshPrices();
     renderTabs();
-    switchTab(TAB_STOCKS);
+    switchTab(TAB_SUMMARY);  // app always opens on the summary
     setStatus('live');
   } catch(e) {
     setStatus('error');
