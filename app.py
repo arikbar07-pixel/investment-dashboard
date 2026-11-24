@@ -656,18 +656,6 @@ def _collect_news(ticker):
     return [n for n in uniq if n['ts'] >= since][:25], False
 
 
-def _fmt_news_out(n, impact='neutral', headline=None, summary=None):
-    return {
-        'ts':       n['ts'],
-        'date':     datetime.fromtimestamp(n['ts']).strftime('%d.%m.%Y'),
-        'headline': headline or n['headline'],
-        'summary':  summary if summary is not None else n['summary'][:400],
-        'impact':   impact,
-        'source':   n['source'],
-        'url':      n['url'],
-    }
-
-
 _NEWS_SCHEMA = {
     'type': 'object',
     'properties': {
@@ -676,12 +664,11 @@ _NEWS_SCHEMA = {
             'items': {
                 'type': 'object',
                 'properties': {
-                    'index':    {'type': 'integer'},
-                    'headline': {'type': 'string'},
-                    'summary':  {'type': 'string'},
-                    'impact':   {'type': 'string', 'enum': ['positive', 'negative', 'neutral']},
+                    'index':  {'type': 'integer'},
+                    'point':  {'type': 'string'},
+                    'impact': {'type': 'string', 'enum': ['positive', 'negative', 'neutral']},
                 },
-                'required': ['index', 'headline', 'summary', 'impact'],
+                'required': ['index', 'point', 'impact'],
                 'additionalProperties': False,
             },
         },
@@ -690,22 +677,74 @@ _NEWS_SCHEMA = {
     'additionalProperties': False,
 }
 
-_NEWS_SYSTEM = """You are a financial news analyst for a long-term investor.
+_NEWS_SYSTEM = """You are a financial news analyst for a long-term Israeli investor.
 
 From the numbered news list, pick AT MOST 5 items most likely to move the price of the given asset, most important first.
 Prefer: earnings and guidance, analyst upgrades/downgrades and price targets, regulation and lawsuits, M&A,
 leadership changes, major product/contract news, and macro events with direct impact (Fed, CPI, jobs) for index funds and crypto.
-Skip PR fluff, generic listicles, and items not really about this asset. Never invent facts beyond the given text.
+Skip PR fluff, generic listicles, duplicates of the same story, and items not really about this asset.
+Never invent facts beyond the given text.
 
 For each picked item return:
 - index: the item's number from the list
-- headline: a short Hebrew headline
-- summary: 1-2 Hebrew sentences — what happened and how it may affect the price
-- impact: positive / negative / neutral for the asset's price"""
+- point: ONE short bullet point in Hebrew (max ~15 words) — the fact and, if clear, its likely effect on the price.
+  Write only in Hebrew. Tickers, company names and numbers may stay as they are.
+- impact: positive / negative / neutral for the asset's price
+
+Return only items that are actually relevant; an empty list is fine."""
+
+
+def _parse_news_json(text):
+    text = (text or '').strip()
+    if text.startswith('```'):
+        text = text.strip('`')
+        if text.lower().startswith('json'):
+            text = text[4:]
+    i, j = text.find('{'), text.rfind('}')
+    if i < 0 or j < 0:
+        raise ValueError('no JSON object in reply')
+    return json.loads(text[i:j + 1]).get('items', [])
+
+
+def _summarize_news_he(ticker, raw, api_key):
+    """Returns (points, error). points: list of dicts for the UI, Hebrew only."""
+    import anthropic as ac
+    client = ac.Anthropic(api_key=api_key, timeout=40.0)
+    news_text = ''
+    for i, n in enumerate(raw, 1):
+        when = datetime.fromtimestamp(n['ts']).strftime('%d.%m %H:%M')
+        news_text += f"{i}. [{when}] {n['headline']}\n{n['summary'][:500]}\n\n"
+    req = dict(model='claude-haiku-5-5', max_tokens=4000, system=_NEWS_SYSTEM,
+               messages=[{'role': 'user', 'content': f'Asset: {ticker}\n\nNews:\n{news_text}'}])
+    try:
+        msg = client.messages.create(
+            output_config={'effort': 'low', 'format': {'type': 'json_schema', 'schema': _NEWS_SCHEMA}}, **req)
+    except ac.BadRequestError as e:
+        # e.g. structured outputs unavailable for this key/model — retry with plain JSON instructions
+        print(f'[news] structured output rejected ({e.message}); retrying without it')
+        req['system'] += '\n\nRespond with ONLY a JSON object: {"items":[{"index":1,"point":"...","impact":"positive"}]}'
+        msg = client.messages.create(**req)
+    if msg.stop_reason == 'refusal':
+        return [], 'refusal'
+    text = next((b.text for b in msg.content if b.type == 'text'), '')
+    picked = _parse_news_json(text)
+    out, used = [], set()
+    for it in picked:
+        idx = it.get('index')
+        point = (it.get('point') or '').strip()
+        if not isinstance(idx, int) or not (1 <= idx <= len(raw)) or idx in used or not point:
+            continue
+        used.add(idx)
+        out.append({'ts': raw[idx - 1]['ts'], 'point': point,
+                    'impact': it.get('impact') if it.get('impact') in ('positive', 'negative', 'neutral') else 'neutral'})
+        if len(out) >= NEWS_MAX:
+            break
+    return out, None
 
 
 @app.route('/api/news/<path:ticker>')
 def get_news(ticker):
+    """{items: [{ts, point, impact}], last_day: bool, status: ok|empty|no_key|error}"""
     key = 'news:' + ticker
     cached_val = _cache.get(key)
     if cached_val and time.time() - cached_val['ts'] < NEWS_CACHE_TTL:
@@ -713,53 +752,25 @@ def get_news(ticker):
 
     raw, is_last_day = _collect_news(ticker)
     if not raw:
-        return jsonify([])  # not cached, so a later request retries
+        return jsonify({'items': [], 'last_day': True, 'status': 'empty'})
 
-    fallback = [_fmt_news_out(n) for n in raw[:NEWS_MAX]]
-    result = fallback
+    api_key = os.environ.get('ANTHROPIC_KEY', '') or os.environ.get('ANTHROPIC_API_KEY', '')
+    if not api_key:
+        print('[news] ANTHROPIC_KEY is not set — cannot summarize news in Hebrew')
+        return jsonify({'items': [], 'last_day': is_last_day, 'status': 'no_key'})
 
-    anthropic_key = os.environ.get('ANTHROPIC_KEY', '') or os.environ.get('ANTHROPIC_API_KEY', '')
-    if anthropic_key:
-        try:
-            import anthropic as ac
-            client = ac.Anthropic(api_key=anthropic_key, timeout=40.0)
-            news_text = ''
-            for i, n in enumerate(raw, 1):
-                when = datetime.fromtimestamp(n['ts']).strftime('%d.%m %H:%M')
-                news_text += f"{i}. [{when}] {n['headline']}\n{n['summary'][:500]}\n\n"
+    try:
+        items, err = _summarize_news_he(ticker, raw, api_key)
+    except Exception as e:
+        print(f'[news] claude {ticker}: {type(e).__name__}: {e}')
+        return jsonify({'items': [], 'last_day': is_last_day, 'status': 'error'})
+    if err:
+        print(f'[news] claude {ticker}: {err}')
+        return jsonify({'items': [], 'last_day': is_last_day, 'status': 'error'})
 
-            msg = client.messages.create(
-                model='claude-haiku-5-5',
-                max_tokens=4000,
-                system=_NEWS_SYSTEM,
-                output_config={'effort': 'low',
-                               'format': {'type': 'json_schema', 'schema': _NEWS_SCHEMA}},
-                messages=[{'role': 'user', 'content': f'Asset: {ticker}\n\nNews:\n{news_text}'}],
-            )
-            if msg.stop_reason not in ('refusal', 'max_tokens'):
-                text = next((b.text for b in msg.content if b.type == 'text'), '')
-                picked = json.loads(text).get('items', [])
-                out, used = [], set()
-                for it in picked:
-                    idx = it.get('index')
-                    if not isinstance(idx, int) or not (1 <= idx <= len(raw)) or idx in used:
-                        continue
-                    used.add(idx)
-                    out.append(_fmt_news_out(raw[idx - 1], it.get('impact', 'neutral'),
-                                             it.get('headline'), it.get('summary', '')))
-                    if len(out) >= NEWS_MAX:
-                        break
-                if out:
-                    result = out
-            else:
-                print(f'[news] claude stop_reason={msg.stop_reason} for {ticker}')
-        except Exception as e:
-            print(f'[news] claude {ticker}: {e}')
-
-    for r in result:
-        r['last_day'] = is_last_day
-    _cache[key] = {'ts': time.time(), 'data': result}
-    return jsonify(result)
+    data = {'items': items, 'last_day': is_last_day, 'status': 'ok' if items else 'empty'}
+    _cache[key] = {'ts': time.time(), 'data': data}
+    return jsonify(data)
 
 
 if __name__ == '__main__':

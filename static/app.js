@@ -819,9 +819,15 @@ function escHtml(s) {
 }
 
 var NEWS_IMPACT = {
-  positive: { cls: 'pos', label: '▲ חיובי' },
-  negative: { cls: 'neg', label: '▼ שלילי' },
-  neutral:  { cls: '',    label: '● ניטרלי' }
+  positive: { cls: 'pos', icon: '▲' },
+  negative: { cls: 'neg', icon: '▼' },
+  neutral:  { cls: '',    icon: '•' }
+};
+
+var NEWS_STATUS_MSG = {
+  empty:  'אין חדשות משמעותיות מהיממה האחרונה',
+  no_key: 'סיכום החדשות לא זמין — חסר מפתח Claude בשרת (ANTHROPIC_KEY ב-Railway)',
+  error:  'לא הצלחנו לסכם את החדשות כרגע — נסה שוב בעוד רגע'
 };
 
 var _newsReq = 0;
@@ -832,35 +838,31 @@ function loadNews(ticker) {
   var label   = section.querySelector('.news-section-label');
   var req     = ++_newsReq;
   section.style.display = 'block';
-  if (label) label.textContent = 'חדשות מהיממה האחרונה — ' + ticker;
+  if (label) label.textContent = 'מה קורה עם ' + ticker + ' — היממה האחרונה';
   list.innerHTML = '<div class="news-empty">⟳ טוען חדשות...</div>';
 
   apiFetch('/api/news/' + encodeURIComponent(ticker))
-    .then(function(items) {
+    .then(function(d) {
       if (req !== _newsReq) return;  // user moved to another chart
-      if (!items || !items.length) {
-        list.innerHTML = '<div class="news-empty">אין חדשות משמעותיות על ' + escHtml(ticker) + ' מהימים האחרונים</div>';
+      var items = (d && d.items) || [];
+      if (!items.length) {
+        var msg = NEWS_STATUS_MSG[(d && d.status) || 'empty'] || NEWS_STATUS_MSG.empty;
+        list.innerHTML = '<div class="news-empty' + (d && d.status !== 'empty' ? ' news-err' : '') + '">' + msg + '</div>';
         return;
       }
-      if (label && items[0].last_day === false) label.textContent = 'חדשות אחרונות — ' + ticker + ' (אין חדשות מהיממה האחרונה)';
-      list.innerHTML = items.map(function(n) {
-        var imp  = NEWS_IMPACT[n.impact] || NEWS_IMPACT.neutral;
-        var meta = [newsAgo(n.ts) || n.date, n.source].filter(Boolean).map(escHtml).join(' · ');
-        var safeUrl = /^https?:\/\//i.test(n.url || '') ? n.url : '';
-        var head = safeUrl
-          ? '<a class="news-headline" href="' + escHtml(safeUrl) + '" target="_blank" rel="noopener noreferrer">' + escHtml(n.headline) + '</a>'
-          : '<span class="news-headline">' + escHtml(n.headline) + '</span>';
-        return '<div class="news-item">' +
-          '<div class="news-top">' + head +
-            '<span class="news-impact ' + imp.cls + '">' + imp.label + '</span></div>' +
-          (n.summary ? '<div class="news-summary">' + escHtml(n.summary) + '</div>' : '') +
-          '<div class="news-meta">' + meta + '</div>' +
-        '</div>';
-      }).join('');
+      if (label && d.last_day === false) label.textContent = 'מה קורה עם ' + ticker + ' — הימים האחרונים';
+      list.innerHTML = '<ul class="news-points">' + items.map(function(n) {
+        var imp = NEWS_IMPACT[n.impact] || NEWS_IMPACT.neutral;
+        return '<li class="news-point">' +
+          '<span class="news-dot ' + imp.cls + '">' + imp.icon + '</span>' +
+          '<span class="news-text">' + escHtml(n.point) + '</span>' +
+          '<span class="news-when">' + escHtml(newsAgo(n.ts)) + '</span>' +
+        '</li>';
+      }).join('') + '</ul>';
     })
     .catch(function() {
       if (req !== _newsReq) return;
-      list.innerHTML = '<div class="news-empty news-err">שגיאה בטעינת חדשות — נסה שוב בעוד רגע</div>';
+      list.innerHTML = '<div class="news-empty news-err">' + NEWS_STATUS_MSG.error + '</div>';
     });
 }
 
