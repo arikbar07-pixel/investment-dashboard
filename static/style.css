@@ -1517,3 +1517,16 @@ body:not(.mobile-mode) .main-layout { padding-bottom: calc(80px + env(safe-area-
   body:not(.mobile-mode) .summary-grid .stat-item:nth-child(2) .stat-value { font-size: 30px; }
   body:not(.mobile-mode) .m-total { flex-direction: column; align-items: stretch; }
 }
+
+/* ── Summary cards: same dark-blue gradient as the category total card ──── */
+body .summary-grid .stat-item.glass-card,
+body .content-card .perf-chart-section {
+  background: linear-gradient(135deg, rgba(46,98,246,.18), rgba(46,98,246,.04)), var(--bg);
+  border: 1px solid rgba(182,196,255,.18);
+  box-shadow: none;
+}
+body.light .summary-grid .stat-item.glass-card,
+body.light .content-card .perf-chart-section {
+  background: linear-gradient(135deg, rgba(46,98,246,.10), rgba(46,98,246,.02)), var(--surface);
+  border-color: rgba(46,98,246,.18);
+}
