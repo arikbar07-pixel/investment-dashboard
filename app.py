@@ -577,96 +577,189 @@ def get_chart(ticker):
         return jsonify([])
 
 
+NEWS_MAX       = 5
+NEWS_CACHE_TTL = 600  # seconds
+
+_CRYPTO_NEWS_KEYS = {
+    'BTC-USD': ['BTC', 'BITCOIN'],
+    'ETH-USD': ['ETH', 'ETHEREUM', 'ETHER '],
+}
+
+
+def _news_item(ts, headline, summary, source='', url=''):
+    return {'ts': int(ts or 0), 'headline': (headline or '').strip(),
+            'summary': (summary or '').strip(), 'source': source or '', 'url': url or ''}
+
+
+def _news_finnhub(ticker, since_ts):
+    """Company news (stocks/ETFs) or general crypto news filtered by coin, from Finnhub."""
+    try:
+        if is_crypto(ticker):
+            raw  = fh_get('news', {'category': 'crypto'}) or []
+            keys = _CRYPTO_NEWS_KEYS.get(ticker, [ticker.replace('-USD', '')])
+            raw  = [n for n in raw if any(k in (n.get('headline', '') + ' ' + n.get('summary', '')).upper() for k in keys)]
+        else:
+            date_to   = datetime.utcnow().strftime('%Y-%m-%d')
+            date_from = datetime.utcfromtimestamp(since_ts).strftime('%Y-%m-%d')
+            raw = fh_get('company-news', {'symbol': ticker, 'from': date_from, 'to': date_to}) or []
+        return [_news_item(n.get('datetime'), n.get('headline'), n.get('summary'), n.get('source'), n.get('url'))
+                for n in raw if isinstance(n, dict)]
+    except Exception as e:
+        print(f'[news] finnhub {ticker}: {e}')
+        return []
+
+
+def _news_yahoo(ticker):
+    """Yahoo Finance news via yfinance — covers ETFs and crypto that Finnhub misses."""
+    out = []
+    try:
+        items = yf.Ticker(ticker).news or []
+    except Exception as e:
+        print(f'[news] yahoo {ticker}: {e}')
+        return out
+    for n in items:
+        if not isinstance(n, dict):
+            continue
+        c = n.get('content') if isinstance(n.get('content'), dict) else None
+        if c:  # newer yfinance format
+            ts = 0
+            pub = c.get('pubDate') or c.get('displayTime')
+            if pub:
+                try:
+                    ts = int(datetime.fromisoformat(pub.replace('Z', '+00:00')).timestamp())
+                except Exception:
+                    ts = 0
+            url = ((c.get('canonicalUrl') or {}).get('url') or (c.get('clickThroughUrl') or {}).get('url') or '')
+            out.append(_news_item(ts, c.get('title'), c.get('summary') or c.get('description'),
+                                  (c.get('provider') or {}).get('displayName', ''), url))
+        else:  # older yfinance format
+            out.append(_news_item(n.get('providerPublishTime'), n.get('title'), n.get('summary', ''),
+                                  n.get('publisher', ''), n.get('link', '')))
+    return out
+
+
+def _collect_news(ticker):
+    """Merge sources, dedupe, newest first. Prefer the last 24h; widen to 3 days only if 24h is empty."""
+    now = time.time()
+    since = now - 3 * 86400
+    items = _news_finnhub(ticker, since) + _news_yahoo(ticker)
+    seen, uniq = set(), []
+    for n in sorted(items, key=lambda x: x['ts'], reverse=True):
+        key = n['headline'].lower()[:80]
+        if not n['headline'] or not n['ts'] or key in seen:
+            continue
+        seen.add(key)
+        uniq.append(n)
+    last_day = [n for n in uniq if n['ts'] >= now - 86400]
+    if last_day:
+        return last_day[:25], True
+    return [n for n in uniq if n['ts'] >= since][:25], False
+
+
+def _fmt_news_out(n, impact='neutral', headline=None, summary=None):
+    return {
+        'ts':       n['ts'],
+        'date':     datetime.fromtimestamp(n['ts']).strftime('%d.%m.%Y'),
+        'headline': headline or n['headline'],
+        'summary':  summary if summary is not None else n['summary'][:400],
+        'impact':   impact,
+        'source':   n['source'],
+        'url':      n['url'],
+    }
+
+
+_NEWS_SCHEMA = {
+    'type': 'object',
+    'properties': {
+        'items': {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'index':    {'type': 'integer'},
+                    'headline': {'type': 'string'},
+                    'summary':  {'type': 'string'},
+                    'impact':   {'type': 'string', 'enum': ['positive', 'negative', 'neutral']},
+                },
+                'required': ['index', 'headline', 'summary', 'impact'],
+                'additionalProperties': False,
+            },
+        },
+    },
+    'required': ['items'],
+    'additionalProperties': False,
+}
+
+_NEWS_SYSTEM = """You are a financial news analyst for a long-term investor.
+
+From the numbered news list, pick AT MOST 5 items most likely to move the price of the given asset, most important first.
+Prefer: earnings and guidance, analyst upgrades/downgrades and price targets, regulation and lawsuits, M&A,
+leadership changes, major product/contract news, and macro events with direct impact (Fed, CPI, jobs) for index funds and crypto.
+Skip PR fluff, generic listicles, and items not really about this asset. Never invent facts beyond the given text.
+
+For each picked item return:
+- index: the item's number from the list
+- headline: a short Hebrew headline
+- summary: 1-2 Hebrew sentences — what happened and how it may affect the price
+- impact: positive / negative / neutral for the asset's price"""
+
+
 @app.route('/api/news/<path:ticker>')
 def get_news(ticker):
     key = 'news:' + ticker
     cached_val = _cache.get(key)
-    if cached_val and time.time() - cached_val['ts'] < 300:
+    if cached_val and time.time() - cached_val['ts'] < NEWS_CACHE_TTL:
         return jsonify(cached_val['data'])
 
-    try:
-        symbol   = fh_symbol(ticker).replace('BINANCE:', '')
-        date_to  = datetime.now().strftime('%Y-%m-%d')
-        date_from = (datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')
+    raw, is_last_day = _collect_news(ticker)
+    if not raw:
+        return jsonify([])  # not cached, so a later request retries
 
-        if is_crypto(ticker):
-            raw = fh_get('news', {'category': 'crypto', 'minId': 0})
-            raw = [n for n in raw if any(k in (n.get('headline','') + n.get('summary','')).upper()
-                   for k in [ticker.replace('-USD',''), 'BTC', 'ETH', 'BITCOIN', 'ETHEREUM'])][:20]
-        else:
-            raw = fh_get('company-news', {'symbol': ticker, 'from': date_from, 'to': date_to})
+    fallback = [_fmt_news_out(n) for n in raw[:NEWS_MAX]]
+    result = fallback
 
-        if not raw:
-            return jsonify([])
+    anthropic_key = os.environ.get('ANTHROPIC_KEY', '') or os.environ.get('ANTHROPIC_API_KEY', '')
+    if anthropic_key:
+        try:
+            import anthropic as ac
+            client = ac.Anthropic(api_key=anthropic_key, timeout=40.0)
+            news_text = ''
+            for i, n in enumerate(raw, 1):
+                when = datetime.fromtimestamp(n['ts']).strftime('%d.%m %H:%M')
+                news_text += f"{i}. [{when}] {n['headline']}\n{n['summary'][:500]}\n\n"
 
-        # Build news text for Claude
-        news_text = ''
-        for i, n in enumerate(raw[:20]):
-            ts   = datetime.fromtimestamp(n.get('datetime', 0)).strftime('%d.%m.%Y')
-            news_text += f"{i+1}. [{ts}] {n.get('headline','')}\n{n.get('summary','')}\n\n"
+            msg = client.messages.create(
+                model='claude-haiku-5-5',
+                max_tokens=4000,
+                system=_NEWS_SYSTEM,
+                output_config={'effort': 'low',
+                               'format': {'type': 'json_schema', 'schema': _NEWS_SCHEMA}},
+                messages=[{'role': 'user', 'content': f'Asset: {ticker}\n\nNews:\n{news_text}'}],
+            )
+            if msg.stop_reason not in ('refusal', 'max_tokens'):
+                text = next((b.text for b in msg.content if b.type == 'text'), '')
+                picked = json.loads(text).get('items', [])
+                out, used = [], set()
+                for it in picked:
+                    idx = it.get('index')
+                    if not isinstance(idx, int) or not (1 <= idx <= len(raw)) or idx in used:
+                        continue
+                    used.add(idx)
+                    out.append(_fmt_news_out(raw[idx - 1], it.get('impact', 'neutral'),
+                                             it.get('headline'), it.get('summary', '')))
+                    if len(out) >= NEWS_MAX:
+                        break
+                if out:
+                    result = out
+            else:
+                print(f'[news] claude stop_reason={msg.stop_reason} for {ticker}')
+        except Exception as e:
+            print(f'[news] claude {ticker}: {e}')
 
-        anthropic_key = os.environ.get('ANTHROPIC_KEY', '')
-        if not anthropic_key:
-            result = [{'date': datetime.fromtimestamp(n.get('datetime',0)).strftime('%d.%m.%Y'),
-                       'headline': n.get('headline',''), 'summary': n.get('summary','')}
-                      for n in raw[:8]]
-            _cache[key] = {'ts': time.time(), 'data': result}
-            return jsonify(result)
-
-        import anthropic as ac
-        client = ac.Anthropic(api_key=anthropic_key)
-
-        system_prompt = """You are a financial news analyst for a long-term investor holding index funds, crypto, and a few individual stocks.
-
-Keep only news that:
-- Directly impacts the price or outlook of the specific asset
-- Reports macro events with clear market implications (Fed decisions, CPI, GDP, employment)
-- Covers crypto regulation or legal decisions
-- Reports major earnings results
-- Covers significant geopolitical events with direct market impact
-- Contains company-specific events (leadership changes, lawsuits, acquisitions, analyst upgrades/downgrades)
-
-Filter out:
-- Corporate PR and marketing announcements
-- General sector commentary not tied to the specific asset
-- Opinion pieces without concrete facts
-- News older than 48 hours
-- Vague predictions without factual basis
-
-For each relevant item, write a clear summary IN HEBREW of what happened and why it matters for this specific asset.
-The summary should be 2-4 sentences: first explain what happened, then explain the potential market impact.
-
-Respond in this exact JSON format:
-[{"date":"DD.MM.YYYY","headline":"כותרת בעברית","summary":"סיכום בעברית של האירוע והשפעתו הצפויה על הנכס"}]
-Return ONLY the JSON array, no other text."""
-
-        msg = client.messages.create(
-            model='claude-haiku-5-5',
-            max_tokens=2000,
-            system=system_prompt,
-            messages=[{'role': 'user', 'content': f'Asset: {ticker}\n\nNews:\n{news_text}'}]
-        )
-
-        import json as _json
-        text = msg.content[0].text.strip()
-        if text.startswith('```'):
-            text = text.split('```')[1]
-            if text.startswith('json'):
-                text = text[4:]
-        filtered = _json.loads(text.strip())
-
-        # If Claude filtered everything out, fall back to raw news
-        if not filtered:
-            filtered = [{'date': datetime.fromtimestamp(n.get('datetime',0)).strftime('%d.%m.%Y'),
-                         'headline': n.get('headline',''), 'summary': n.get('summary','')}
-                        for n in raw[:6]]
-
-        _cache[key] = {'ts': time.time(), 'data': filtered}
-        return jsonify(filtered)
-
-    except Exception as e:
-        print(f'[news] {ticker}: {e}')
-        return jsonify([])
+    for r in result:
+        r['last_day'] = is_last_day
+    _cache[key] = {'ts': time.time(), 'data': result}
+    return jsonify(result)
 
 
 if __name__ == '__main__':
