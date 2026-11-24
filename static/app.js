@@ -357,80 +357,20 @@ function renderActiveTab() {
     renderPortfolioChart();
   } else {
     var investments = S.portfolio[S.activeTab] || [];
-    el.innerHTML = renderTable(investments, S.activeTab === TAB_STOCKS);
+    el.innerHTML = renderTable(investments);
   }
 }
 
 // --- Table ---
 
-function renderTable(investments, isStocks) {
+function renderTable(investments) {
   if (!investments.length) {
-    return '<div class="spinner">אין השקעות בקטגוריה זו &mdash; ' +
-      (isMobile() ? 'לחץ + כדי להוסיף.' : 'הוסף אחת למעלה.') + '</div>';
+    return '<div class="spinner">אין השקעות בקטגוריה זו &mdash; לחץ + כדי להוסיף.</div>';
   }
-  if (isMobile()) return renderCards(investments);
-
-  var invUsd = 0, invIls = 0, curIls = 0;
-  var colCount = 9;
-
-  function buildRow(inv) {
-    var pd = S.prices[inv.ticker];
-    var p  = pd ? pd.price : null;
-    var cur = p ? calcCurrentIls(inv, p) : null;
-    var pct = p ? (p - inv.purchase_price) / inv.purchase_price * 100 : null;
-    var pctClass = pct === null ? '' : pct >= 0 ? 'pos' : 'neg';
-    var pctStr   = pct === null ? '...' : (pct >= 0 ? '+' : '') + pct.toFixed(3) + '%';
-    var rowIls   = calcInvestedIls(inv);
-
-    invUsd += inv.invested_usd;
-    invIls += rowIls;
-    if (cur) curIls += cur;
-
-    var catEsc = S.activeTab.replace(/'/g, "\\'");
-    var idEsc  = inv.id.replace(/'/g, "\\'");
-
-    return '<tr onclick="onRowClick(\'' + inv.ticker + '\')" data-id="' + inv.id + '">' +
-      '<td class="td-ticker">' + inv.ticker + '</td>' +
-      '<td class="td-name">' + (inv.name || '') + '</td>' +
-      '<td>$' + fmt2(inv.invested_usd) + '</td>' +
-      '<td>₪' + fmt0(rowIls) + '</td>' +
-      '<td>' + fmtDate(inv.purchase_date) + '</td>' +
-      '<td class="td-price">$' + fmtPrice(inv.purchase_price) + '</td>' +
-      '<td class="td-price" id="pr-' + inv.id + '">' + (p ? '$' + fmtPrice(p) : '...') + '</td>' +
-      '<td class="td-pct ' + pctClass + '" id="pct-' + inv.id + '">' + pctStr + '</td>' +
-      '<td class="td-value" id="val-' + inv.id + '">' + (cur ? '₪' + fmt2(cur) : '...') + '</td>' +
-      '<td><button class="btn-del" onclick="delRow(event,\'' + catEsc + '\',\'' + idEsc + '\')">🗑</button></td>' +
-      '</tr>';
-  }
-
-  var rows = investments.map(buildRow).join('');
-
-  var totalPct   = invIls ? (curIls - invIls) / invIls * 100 : 0;
-  var totalClass = totalPct >= 0 ? 'pos' : 'neg';
-
-  return '<div class="table-wrap"><table>' +
-    '<thead><tr>' +
-    '<th>מניה / נכס</th><th>שם</th>' +
-    '<th>הושקע ($)</th><th>הושקע (₪)</th>' +
-    '<th>תאריך קנייה</th><th>מחיר קנייה</th>' +
-    '<th>מחיר עכשווי ⟳</th><th>%</th>' +
-    '<th>שווי עכשווי (₪)</th>' +
-    '<th></th>' +
-    '</tr></thead>' +
-    '<tbody>' + rows +
-    '<tr class="tr-total">' +
-    '<td colspan="2">סה"כ</td>' +
-    '<td>$' + fmt2(invUsd) + '</td>' +
-    '<td>₪' + fmt0(invIls) + '</td>' +
-    '<td></td><td></td><td></td>' +
-    '<td class="td-pct ' + totalClass + '">' + (totalPct >= 0 ? '+' : '') + totalPct.toFixed(3) + '%</td>' +
-    '<td class="td-value">₪' + fmt2(curIls) + '</td>' +
-    '<td></td>' +
-    '</tr>' +
-    '</tbody></table></div>';
+  return renderCards(investments);
 }
 
-// --- Mobile: investment cards ---
+// --- Investment cards (phone + desktop) ---
 
 function renderCards(investments) {
   var invUsd = 0, invIls = 0, curIls = 0;
@@ -520,68 +460,27 @@ function renderSummaryCardsMobile(displayCats) {
 function renderSummaryTab() {
   var allCats = Object.keys(S.portfolio).filter(function(k) { return k[0] !== '_'; });
   var displayCats = allCats.map(function(t) { return { label: t, tabs: [t], clickTab: t }; });
-  var gInvIls = 0, gCurIls = 0;
-
-  var rows = displayCats.map(function(cat) {
-    var invs = [], invUsd = 0, invIls = 0, curIls = 0;
+  displayCats.forEach(function(cat) {
+    var count = 0, invIls = 0, curIls = 0;
     cat.tabs.forEach(function(t) {
       (S.portfolio[t] || []).forEach(function(inv) {
-        invs.push(inv);
-        invUsd += inv.invested_usd;
+        count++;
         invIls += calcInvestedIls(inv);
         var pd = S.prices[inv.ticker];
         if (pd && pd.price) curIls += calcCurrentIls(inv, pd.price);
       });
     });
-    gInvIls += invIls;
-    gCurIls += curIls;
-    var pct = invIls ? (curIls - invIls) / invIls * 100 : 0;
-    var cls = pct >= 0 ? 'pos' : 'neg';
-    cat.count = invs.length; cat.invIls = invIls; cat.curIls = curIls; cat.pct = pct;
-    return '<tr>' +
-      '<td class="td-ticker">' + cat.label + '</td>' +
-      '<td>' + invs.length + ' פוזיציות</td>' +
-      '<td>$' + fmt2(invUsd) + '</td>' +
-      '<td>₪' + fmt0(invIls) + '</td>' +
-      '<td class="td-value">₪' + fmt2(curIls) + '</td>' +
-      '<td class="td-pct ' + cls + '">' + (pct >= 0 ? '+' : '') + pct.toFixed(3) + '%</td>' +
-      '<td class="td-pct ' + cls + '">' + ((curIls - invIls) >= 0 ? '+' : '') + '₪' + fmt2(curIls - invIls) + '</td>' +
-      '</tr>';
-  }).join('');
+    cat.count = count; cat.invIls = invIls; cat.curIls = curIls;
+    cat.pct = invIls ? (curIls - invIls) / invIls * 100 : 0;
+  });
 
-  var gPct = gInvIls ? (gCurIls - gInvIls) / gInvIls * 100 : 0;
-  var gCls = gPct >= 0 ? 'pos' : 'neg';
-  var pnlColor = gPct >= 0 ? 'var(--green)' : 'var(--red)';
-
-  if (isMobile()) {
-    // Top stat cards (.summary-grid) already show the totals on mobile
-    return '<div class="perf-chart-section m-pie-section">' +
-      '<div class="perf-chart-title">הרכב התיק</div>' +
-      '<div class="pie-wrap"><canvas id="pie-chart"></canvas></div>' +
+  // Top stat cards (.summary-grid) already show the totals
+  return '<div class="m-sum-row">' +
+      '<div class="perf-chart-section m-pie-section">' +
+        '<div class="perf-chart-title">הרכב התיק</div>' +
+        '<div class="pie-wrap"><canvas id="pie-chart"></canvas></div>' +
       '</div>' +
-      renderSummaryCardsMobile(displayCats) +
-      '<div class="perf-chart-section">' +
-      '<div class="perf-chart-title">ביצועי תיק לאורך זמן (₪)</div>' +
-      '<div class="perf-chart-wrap"><canvas id="portfolio-perf-chart"></canvas></div>' +
-      '</div>';
-  }
-
-  return '<div class="summary-header-cards">' +
-    '<div class="sum-card"><div class="sum-card-label">סה"כ הושקע</div><div class="sum-card-value">₪' + fmt0(gInvIls) + '</div></div>' +
-    '<div class="sum-card"><div class="sum-card-label">שווי נוכחי</div><div class="sum-card-value">₪' + fmt0(gCurIls) + '</div></div>' +
-    '<div class="sum-card"><div class="sum-card-label">רווח / הפסד</div><div class="sum-card-value" style="color:' + pnlColor + '">' + ((gCurIls - gInvIls) >= 0 ? '+' : '') + '₪' + fmt2(gCurIls - gInvIls) + '</div></div>' +
-    '<div class="sum-card"><div class="sum-card-label">תשואה כוללת</div><div class="sum-card-value" style="color:' + pnlColor + '">' + (gPct >= 0 ? '+' : '') + gPct.toFixed(2) + '%</div></div>' +
-    '</div>' +
-    '<div class="summary-bottom">' +
-    '<div class="table-wrap summary-table-wrap"><table>' +
-    '<thead><tr><th>קטגוריה</th><th>פוזיציות</th><th>הושקע ($)</th><th>הושקע (₪)</th><th>שווי נוכחי (₪)</th><th>תשואה %</th><th>רווח/הפסד (₪)</th></tr></thead>' +
-    '<tbody>' + rows +
-    '<tr class="tr-total"><td>סה"כ</td><td></td><td></td><td>₪' + fmt0(gInvIls) + '</td>' +
-    '<td class="td-value">₪' + fmt2(gCurIls) + '</td>' +
-    '<td class="td-pct ' + gCls + '">' + (gPct >= 0 ? '+' : '') + gPct.toFixed(3) + '%</td>' +
-    '<td class="td-pct ' + gCls + '">' + ((gCurIls - gInvIls) >= 0 ? '+' : '') + '₪' + fmt2(gCurIls - gInvIls) + '</td>' +
-    '</tr></tbody></table></div>' +
-    '<div class="pie-wrap"><canvas id="pie-chart"></canvas></div>' +
+      '<div class="m-sum-cats">' + renderSummaryCardsMobile(displayCats) + '</div>' +
     '</div>' +
     '<div class="perf-chart-section">' +
     '<div class="perf-chart-title">ביצועי תיק לאורך זמן (₪)</div>' +
@@ -638,11 +537,11 @@ function renderPieChart() {
           labels: {
             color: getComputedStyle(document.body).getPropertyValue('--text').trim() || '#c9d1d9',
             padding: isMobile() ? 12 : 16,
-            font: { size: 13, weight: '600' },
-            usePointStyle: isMobile(),
+            font: { size: isMobile() ? 13 : 14, weight: '600' },
+            usePointStyle: true,
             pointStyle: 'circle',
-            boxWidth: isMobile() ? 8 : 0,
-            boxHeight: isMobile() ? 8 : 0
+            boxWidth: 8,
+            boxHeight: 8
           }
         },
         tooltip: {
@@ -706,7 +605,7 @@ async function renderPortfolioChart() {
     var minW   = labels.length * BAR_W;
     var wrapW  = canvas.parentElement ? canvas.parentElement.clientWidth : 0;
     canvas.style.width  = Math.max(minW, wrapW) + 'px';
-    var perfH = isMobile() ? 210 : 250;
+    var perfH = isMobile() ? 210 : 280;
     canvas.style.height = perfH + 'px';
     canvas.width  = Math.max(minW, wrapW);
     canvas.height = perfH;
@@ -794,7 +693,7 @@ function onRowClick(ticker, userTap) {
   document.getElementById('chart-panel').style.display = 'block';
   loadChart(S.chartRange);
   loadNews(ticker);
-  if (userTap && isMobile()) {
+  if (userTap) {
     var panel = document.getElementById('chart-panel');
     var navH  = document.querySelector('.top-nav').offsetHeight;
     var y = panel.getBoundingClientRect().top + window.pageYOffset - navH - 8;
@@ -946,7 +845,7 @@ function drawChart(points) {
 
   if (_priceChart) { _priceChart.remove(); _priceChart = null; }
   container.innerHTML = '';
-  var chartH = isMobile() ? 240 : 280;
+  var chartH = isMobile() ? 240 : 340;
   container.style.height = chartH + 'px';
 
   var first = points[0].price, last = points[points.length - 1].price;

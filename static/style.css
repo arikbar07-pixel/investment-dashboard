@@ -1367,3 +1367,132 @@ body.mobile-mode .ac-list { max-height: 40dvh; }
   body.mobile-mode .m-card-grid { gap: 8px 10px; }
   body.mobile-mode .range-btn { font-size: 11.5px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESKTOP — same card design as the phone, sized for a wide screen
+   ═══════════════════════════════════════════════════════════════════════════ */
+body:not(.mobile-mode) { --gutter: 28px; }
+
+body:not(.mobile-mode) .main-layout { padding-bottom: 40px; }
+body:not(.mobile-mode) .main-layout > * { max-width: 1400px; }
+
+/* Summary stats: big hero + 3 stats in one row */
+body:not(.mobile-mode) .summary-grid {
+  grid-template-columns: 1.6fr repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  padding: 24px var(--gutter) 8px;
+}
+body:not(.mobile-mode) .summary-grid .stat-item {
+  background: var(--surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: 18px;
+  padding: 20px 22px;
+  gap: 8px;
+  justify-content: center;
+  grid-column: auto;
+}
+body:not(.mobile-mode) .summary-grid .stat-item:nth-child(2) { order: -1; }
+body:not(.mobile-mode) .summary-grid .stat-item:nth-child(2) .stat-value { font-size: 40px; }
+body:not(.mobile-mode) .stat-label { font-size: 12px; letter-spacing: .3px; }
+body:not(.mobile-mode) .stat-value { font-size: 24px; direction: ltr; text-align: right; }
+
+/* Content: no outer card, cards in a responsive grid */
+body:not(.mobile-mode) .content-card {
+  margin: 16px var(--gutter) 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+body:not(.mobile-mode) .content-card:hover { background: transparent; box-shadow: none; }
+body:not(.mobile-mode) .m-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 16px;
+}
+body:not(.mobile-mode) .m-card { padding: 18px 20px; border-radius: 18px; transition: transform .15s, background .15s, box-shadow .15s; }
+body:not(.mobile-mode) .m-card:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px var(--primary) inset, 0 10px 24px -12px rgba(46,98,246,.55); }
+body:not(.mobile-mode) .m-ticker { font-size: 19px; }
+body:not(.mobile-mode) .m-name   { font-size: 13px; }
+body:not(.mobile-mode) .m-value  { font-size: 20px; }
+body:not(.mobile-mode) .m-v      { font-size: 15px; }
+body:not(.mobile-mode) .m-k      { font-size: 12px; }
+
+/* Category total: wide banner */
+body:not(.mobile-mode) .m-total {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-radius: 18px;
+  margin-bottom: 16px;
+}
+body:not(.mobile-mode) .m-total-row { gap: 28px; align-items: center; }
+body:not(.mobile-mode) .m-total-row:first-child { flex-direction: column; align-items: flex-start; gap: 8px; }
+body:not(.mobile-mode) .m-total-val { font-size: 34px; }
+
+/* Summary tab: pie next to the category cards */
+body:not(.mobile-mode) .m-sum-row {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+body:not(.mobile-mode) .m-sum-cats .m-section-title { margin-top: 0; }
+body:not(.mobile-mode) .m-sum-cats .m-list { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+body:not(.mobile-mode) .perf-chart-section {
+  margin-top: 16px;
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: var(--surface);
+}
+body:not(.mobile-mode) .m-pie-section { margin-top: 0; }
+body:not(.mobile-mode) .pie-wrap { flex: none; width: 100%; padding: 0; background: none; border: none; }
+body:not(.mobile-mode) .pie-wrap canvas { max-width: 300px; max-height: 340px; }
+body:not(.mobile-mode) .perf-chart-wrap { height: 280px; }
+@media (max-width: 1100px) {
+  body:not(.mobile-mode) .m-sum-row { grid-template-columns: 1fr; }
+  body:not(.mobile-mode) .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  body:not(.mobile-mode) .summary-grid .stat-item:nth-child(2) { grid-column: 1 / -1; }
+}
+
+/* Chart panel: same segmented controls as the phone */
+body:not(.mobile-mode) .chart-panel {
+  margin: 0 var(--gutter) 20px;
+  border-radius: 18px;
+  background: var(--surface);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  scroll-margin-top: calc(var(--nav-h) + 12px);
+}
+body:not(.mobile-mode) .chart-top { padding: 18px 22px; gap: 14px; }
+body:not(.mobile-mode) .chart-ticker-label { font-size: 22px; direction: ltr; }
+body:not(.mobile-mode) .chart-price-label  { font-size: 20px; direction: ltr; }
+body:not(.mobile-mode) .chart-controls { gap: 12px; }
+body:not(.mobile-mode) .range-group {
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface3);
+  border-radius: 10px;
+}
+body:not(.mobile-mode) .range-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+}
+body:not(.mobile-mode) .range-btn:hover { background: var(--primary-dim); }
+body:not(.mobile-mode) .range-btn.active {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+body:not(.mobile-mode) .btn-close { width: 36px; height: 36px; padding: 0; border-radius: 10px; }
+body:not(.mobile-mode) .chart-body { padding: 0 14px 10px; }
+body:not(.mobile-mode) #news-section { padding: 0 22px 20px !important; }
+body:not(.mobile-mode) .news-text { font-size: 15px; }
+body.light:not(.mobile-mode) .chart-top { background: transparent; }
