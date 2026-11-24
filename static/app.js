@@ -802,30 +802,65 @@ function onRowClick(ticker, userTap) {
   }
 }
 
+function newsAgo(ts) {
+  if (!ts) return '';
+  var m = Math.max(0, Math.round((Date.now() / 1000 - ts) / 60));
+  if (m < 60) return 'לפני ' + (m <= 1 ? 'דקה' : m + ' דק׳');
+  var h = Math.round(m / 60);
+  if (h < 24) return 'לפני ' + (h === 1 ? 'שעה' : h + ' שעות');
+  var d = Math.round(h / 24);
+  return 'לפני ' + (d === 1 ? 'יום' : d + ' ימים');
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+var NEWS_IMPACT = {
+  positive: { cls: 'pos', label: '▲ חיובי' },
+  negative: { cls: 'neg', label: '▼ שלילי' },
+  neutral:  { cls: '',    label: '● ניטרלי' }
+};
+
+var _newsReq = 0;
+
 function loadNews(ticker) {
-  var section  = document.getElementById('news-section');
-  var list     = document.getElementById('news-list');
+  var section = document.getElementById('news-section');
+  var list    = document.getElementById('news-list');
+  var label   = section.querySelector('.news-section-label');
+  var req     = ++_newsReq;
   section.style.display = 'block';
-  list.innerHTML = '<div style="color:#8b949e;font-size:12px;padding:8px 0">⟳ טוען חדשות...</div>';
+  if (label) label.textContent = 'חדשות מהיממה האחרונה — ' + ticker;
+  list.innerHTML = '<div class="news-empty">⟳ טוען חדשות...</div>';
 
   apiFetch('/api/news/' + encodeURIComponent(ticker))
     .then(function(items) {
+      if (req !== _newsReq) return;  // user moved to another chart
       if (!items || !items.length) {
-        list.innerHTML = '<div style="color:#8b949e;font-size:12px;padding:8px 0">לא נמצאו חדשות רלוונטיות</div>';
+        list.innerHTML = '<div class="news-empty">אין חדשות משמעותיות על ' + escHtml(ticker) + ' מהימים האחרונים</div>';
         return;
       }
+      if (label && items[0].last_day === false) label.textContent = 'חדשות אחרונות — ' + ticker + ' (אין חדשות מהיממה האחרונה)';
       list.innerHTML = items.map(function(n) {
-        return '<div class="news-divider">' +
-          '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:5px">' +
-          '<span class="news-headline">' + (n.headline || '') + '</span>' +
-          '<span style="font-size:11px;color:#8b949e;white-space:nowrap">' + (n.date || '') + '</span>' +
-          '</div>' +
-          (n.summary ? '<div style="font-size:12px;color:#8b949e;line-height:1.6">' + n.summary + '</div>' : '') +
-          '</div>';
+        var imp  = NEWS_IMPACT[n.impact] || NEWS_IMPACT.neutral;
+        var meta = [newsAgo(n.ts) || n.date, n.source].filter(Boolean).map(escHtml).join(' · ');
+        var safeUrl = /^https?:\/\//i.test(n.url || '') ? n.url : '';
+        var head = safeUrl
+          ? '<a class="news-headline" href="' + escHtml(safeUrl) + '" target="_blank" rel="noopener noreferrer">' + escHtml(n.headline) + '</a>'
+          : '<span class="news-headline">' + escHtml(n.headline) + '</span>';
+        return '<div class="news-item">' +
+          '<div class="news-top">' + head +
+            '<span class="news-impact ' + imp.cls + '">' + imp.label + '</span></div>' +
+          (n.summary ? '<div class="news-summary">' + escHtml(n.summary) + '</div>' : '') +
+          '<div class="news-meta">' + meta + '</div>' +
+        '</div>';
       }).join('');
     })
     .catch(function() {
-      list.innerHTML = '<div style="color:#f85149;font-size:12px">שגיאה בטעינת חדשות</div>';
+      if (req !== _newsReq) return;
+      list.innerHTML = '<div class="news-empty news-err">שגיאה בטעינת חדשות — נסה שוב בעוד רגע</div>';
     });
 }
 

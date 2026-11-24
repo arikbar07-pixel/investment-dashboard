@@ -761,8 +761,18 @@ tr.tr-total td { font-weight: 700; color: var(--text-bright); }
 .chart-body { padding: 0 18px 8px; }
 #tv-chart { border-radius: var(--radius-sm); overflow: hidden; }
 
-.news-headline { font-size: 13px; font-weight: 600; color: var(--text-bright); flex: 1; line-height: 1.4; }
-.news-divider  { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.news-item     { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.news-item:last-child { border-bottom: none; padding-bottom: 0; }
+.news-top      { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.news-headline { font-size: 14px; font-weight: 600; color: var(--text-bright); flex: 1; line-height: 1.45; text-decoration: none; }
+a.news-headline:hover { color: var(--primary); }
+.news-summary  { font-size: 13px; color: var(--text); line-height: 1.6; }
+.news-meta     { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.news-impact   { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--surface3); color: var(--text-muted); white-space: nowrap; }
+.news-impact.pos { background: var(--green-bg); color: var(--green); }
+.news-impact.neg { background: var(--red-bg);   color: var(--red); }
+.news-empty    { color: var(--text-muted); font-size: 13px; padding: 8px 0; }
+.news-err      { color: var(--red); }
 
 .news-section-label {
   font-size: 11px;
@@ -1256,7 +1266,6 @@ body.mobile-mode .btn-close {
 }
 body.mobile-mode .chart-body { padding: 0 8px 8px; }
 body.mobile-mode #news-section { padding: 0 14px 14px !important; }
-body.mobile-mode .news-divider > div:first-child { flex-direction: column; gap: 4px !important; }
 body.mobile-mode .news-headline { font-size: 14px; }
 
 /* ── Bottom tab bar: text-only category pills ───────────────────────────── */
