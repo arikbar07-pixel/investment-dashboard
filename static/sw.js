@@ -1,4 +1,4 @@
-const CACHE = 'equityflow-v7';
+const CACHE = 'equityflow-v8';
 const STATIC = [
   '/',
   '/static/app.js',
