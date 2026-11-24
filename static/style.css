@@ -992,7 +992,7 @@ body.mobile-mode .sidebar { display: none !important; }
 body.mobile-mode .main-layout {
   margin-right: 0 !important;
   padding-top: calc(var(--nav-h) + var(--safe-top));
-  padding-bottom: calc(var(--mnav-h) + var(--safe-bot) + 84px); /* room for nav + FAB */
+  padding-bottom: calc(var(--mnav-h) + var(--safe-bot) + 16px); /* room for bottom nav */
   min-height: 100dvh;
 }
 
@@ -1015,8 +1015,7 @@ body.mobile-mode .status-text { font-size: 11px; white-space: nowrap; max-width:
 body.mobile-mode .nav-end     { min-width: 0; gap: 6px; flex-shrink: 0; }
 body.mobile-mode .clock,
 body.mobile-mode .nav-rate,
-body.mobile-mode .btn-theme,
-body.mobile-mode .btn-add-nav { display: none !important; }
+body.mobile-mode .btn-theme { display: none !important; }
 
 body.mobile-mode .btn-mode-toggle,
 body.mobile-mode .btn-nav-logout {
@@ -1028,6 +1027,19 @@ body.mobile-mode .btn-nav-logout {
   justify-content: center;
   border-radius: 10px;
 }
+/* Add-asset button lives in the top bar on mobile (no floating button) */
+body.mobile-mode .btn-add-nav {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  box-shadow: none;
+}
+body.mobile-mode .btn-add-nav .btn-add-text { display: none; }
+body.mobile-mode .btn-add-nav .material-symbols-outlined { margin: 0 !important; font-size: 22px !important; vertical-align: 0 !important; }
 body.mobile-mode .btn-mode-toggle .material-symbols-outlined,
 body.mobile-mode .btn-nav-logout  .material-symbols-outlined { font-size: 20px !important; }
 
@@ -1302,19 +1314,8 @@ body.mobile-mode .mob-btn.mob-active {
 body.mobile-mode .mob-btn-add-cat { flex: 0 0 44px; min-width: 44px; padding: 0; font-size: 18px; opacity: .7; }
 @media (hover: none) { body.mobile-mode .mob-btn:hover { color: inherit; } body.mobile-mode .mob-btn.mob-active:hover { color: var(--primary); } }
 
-/* ── Floating add button ────────────────────────────────────────────────── */
-body.mobile-mode .mob-fab {
-  display: flex;
-  position: fixed;
-  left: calc(16px + env(safe-area-inset-left, 0px));
-  bottom: calc(var(--mnav-h) + var(--safe-bot) + 14px);
-  z-index: 160;
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-}
-body.mobile-mode .mob-fab .material-symbols-outlined { font-size: 28px; }
-body.mobile-mode.form-open .mob-fab { display: none; }
+/* ── No floating add button on mobile (it's in the top bar) ───────────── */
+body.mobile-mode .mob-fab { display: none !important; }
 
 /* ── Add-asset form: bottom sheet ───────────────────────────────────────── */
 body.mobile-mode .form-panel {
