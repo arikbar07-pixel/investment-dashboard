@@ -1496,3 +1496,24 @@ body:not(.mobile-mode) .chart-body { padding: 0 14px 10px; }
 body:not(.mobile-mode) #news-section { padding: 0 22px 20px !important; }
 body:not(.mobile-mode) .news-text { font-size: 15px; }
 body.light:not(.mobile-mode) .chart-top { background: transparent; }
+
+/* ── Safe areas in desktop mode too (desktop mode opened on a phone / PWA) ─ */
+body:not(.mobile-mode) .top-nav {
+  height: calc(var(--nav-h) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+}
+body:not(.mobile-mode) .sidebar { top: calc(var(--nav-h) + env(safe-area-inset-top, 0px)); }
+body:not(.mobile-mode) .main-layout { padding-top: calc(var(--nav-h) + env(safe-area-inset-top, 0px)); }
+body:not(.mobile-mode) .mobile-nav { padding-bottom: env(safe-area-inset-bottom, 0px); height: calc(64px + env(safe-area-inset-bottom, 0px)); }
+body:not(.mobile-mode) .main-layout { padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 901px) { body:not(.mobile-mode) .main-layout { padding-bottom: 40px; } }
+
+/* Desktop mode on a narrow screen: keep stat values inside their cards */
+@media (max-width: 600px) {
+  body:not(.mobile-mode) { --gutter: 14px; }
+  body:not(.mobile-mode) .summary-grid { gap: 10px; }
+  body:not(.mobile-mode) .summary-grid .stat-item { padding: 12px 10px; }
+  body:not(.mobile-mode) .stat-value { font-size: clamp(14px, 4.3vw, 18px); overflow: hidden; text-overflow: ellipsis; }
+  body:not(.mobile-mode) .summary-grid .stat-item:nth-child(2) .stat-value { font-size: 30px; }
+  body:not(.mobile-mode) .m-total { flex-direction: column; align-items: stretch; }
+}
