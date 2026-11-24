@@ -345,6 +345,7 @@ function switchTab(tab) {
   } else {
     closeChart();
   }
+  window.scrollTo(0, 0);  // every category opens at its top
 }
 
 function renderActiveTab() {
