@@ -1530,3 +1530,25 @@ body.light .content-card .perf-chart-section {
   background: linear-gradient(135deg, rgba(46,98,246,.10), rgba(46,98,246,.02)), var(--surface);
   border-color: rgba(46,98,246,.18);
 }
+
+/* ── "פירוט רכישות" toggle under each category's total card ─────────────── */
+.m-details-btn {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--primary);
+  border-radius: 14px;
+  color: var(--primary);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s, transform .12s;
+}
+.m-details-btn:active { transform: scale(.985); background: var(--surface3); }
+.m-details-btn.open { background: var(--primary-dim); }
+@media (hover: hover) { .m-details-btn:hover { background: var(--primary-dim); } }
+body:not(.mobile-mode) .m-details-btn { margin-bottom: 16px; border-radius: 18px; font-size: 16px; }
