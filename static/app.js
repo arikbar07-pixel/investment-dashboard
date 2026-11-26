@@ -10,7 +10,8 @@ var S = {
   chartRange:  '1mo',
   pieChart:    null,
   perfChart:   null,
-  formOpen:    false
+  formOpen:    false,
+  detailsOpen: {}   // per category: is the purchases list expanded?
 };
 
 var TV_SYMBOLS = {
@@ -329,6 +330,7 @@ function deleteCategory(cat) {
 
 function switchTab(tab) {
   S.activeTab = tab;
+  S.detailsOpen[tab] = false;  // every category opens with just its summary
   renderTabs();
   renderActiveTab();
   var grid = document.querySelector('.summary-grid');
@@ -426,12 +428,22 @@ function renderCards(investments) {
       '<span class="m-pill ' + tCls + '">' + (totalPct >= 0 ? '+' : '') + totalPct.toFixed(2) + '%</span></div>' +
     '<div class="m-total-row">' +
       '<div class="m-cell"><span class="m-k">שווי נוכחי</span><span class="m-total-val">₪' + fmt0(curIls) + '</span></div>' +
+      '<div class="m-cell"><span class="m-k">הושקע</span><span class="m-v">₪' + fmt0(invIls) + '</span></div>' +
       '<div class="m-cell m-cell-end"><span class="m-k">רווח / הפסד</span><span class="m-v td-pct ' + tCls + '">' +
         (totalPnl >= 0 ? '+' : '−') + '₪' + fmt0(Math.abs(totalPnl)) + '</span></div>' +
     '</div>' +
   '</div>';
 
-  return total + '<div class="m-list">' + cards + '</div>';
+  var open = !!S.detailsOpen[S.activeTab];
+  var btn = '<button class="m-details-btn' + (open ? ' open' : '') + '" onclick="toggleDetails()" aria-expanded="' + open + '">' +
+    'פירוט רכישות (' + investments.length + ') ' + (open ? '▴' : '▾') + '</button>';
+
+  return total + btn + (open ? '<div class="m-list">' + cards + '</div>' : '');
+}
+
+function toggleDetails() {
+  S.detailsOpen[S.activeTab] = !S.detailsOpen[S.activeTab];
+  renderActiveTab();
 }
 
 function renderSummaryCardsMobile(displayCats) {
